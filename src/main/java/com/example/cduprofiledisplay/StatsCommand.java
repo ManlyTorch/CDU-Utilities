@@ -1,10 +1,13 @@
 package com.example.cduprofiledisplay;
 
 import net.minecraft.client.Minecraft;
+import net.minecraft.commands.SharedSuggestionProvider;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.RegisterClientCommandsEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
+
+import java.util.stream.Collectors;
 
 import static com.mojang.brigadier.arguments.StringArgumentType.getString;
 import static com.mojang.brigadier.arguments.StringArgumentType.word;
@@ -23,12 +26,13 @@ public final class StatsCommand {
             literal("stats").then(argument("username", word())
                 .suggests((context, builder) -> {
                     Minecraft mc = Minecraft.getInstance();
-                    if (mc.getConnection() != null) {
-                        mc.getConnection().getOnlinePlayers().forEach(info ->
-                            builder.suggest(info.getProfile().getName())
-                        );
-                    };
-                    return builder.buildFuture();
+                    if (mc.getConnection() == null) return builder.buildFuture();
+                    return SharedSuggestionProvider.suggest(
+                        mc.getConnection().getOnlinePlayers().stream()
+                            .map(info -> info.getProfile().getName())
+                            .collect(Collectors.toList()),
+                        builder
+                    );
                 })
                 .executes(ctx -> {
                     String username = getString(ctx, "username");
@@ -37,5 +41,5 @@ public final class StatsCommand {
                 })
             )
         );
-    }
-}
+    };
+};
