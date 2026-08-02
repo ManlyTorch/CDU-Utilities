@@ -1,0 +1,50 @@
+{
+  "player_stats": {
+    "uuid": "4772296d-7c7e-4744-9a78-953d76dd8ac0",
+    "username": "ManlyTorch",
+    "banned": false,
+    "playtime": "13d, 19h, 25m, 57s",
+    "firstjoinedtime": null,
+    "lastjoinedservername": "Society: Sunlit Valley",
+    "lastjoinedtime": null,
+    "uniqueserversseenon": 3,
+    "discordid": "392811932853469205",
+    "isserverbooster": false,
+    "mc_blocksbroken": 592967,
+    "mc_deaths": 17,
+    "mc_distance": 1827147,
+    "mc_distanceclimbed": 9338,
+    "mc_distancecrouched": 66506,
+    "mc_distancefallen": 69348,
+    "mc_distanceflown": 1012924,
+    "mc_distancesprinted": 272639,
+    "mc_distanceswum": 40099,
+    "mc_distancewalked": 434979,
+    "mc_jumps": 220753,
+    "mc_mobskilled": 8995,
+    "mc_playerskilled": 0,
+    "numberofwarns": 0,
+    "numberofnotes": 0,
+    "votes": 553,
+    "player_awards": [
+      {
+        "award_name": "Stone Breaker",
+        "award_description": "Break 500,000 blocks.",
+        "img_url": "https://cdn.playcdu.co/Images/Badges/Achievements/Stealth%20Master.png",
+        "emoji": "<:Worldtraveler:1213118709644927057>"
+      },
+      {
+        "award_name": "Pacifist",
+        "award_description": "Accumulate 1 week of playtime without killing any other players",
+        "img_url": "https://cdn.playcdu.co/Images/Badges/pacifist.png",
+        "emoji": "<:pacifist:1194977151427039284>"
+      },
+      {
+        "award_name": "Veteran Player",
+        "award_description": "Achieve 1 week of total playtime.",
+        "img_url": "https://cdn.playcdu.co/Images/Badges/Achievements/Veteran%20player.png",
+        "emoji": "<:Veteranplayer:1213118706914426930>"
+      }
+    ]
+  }
+}

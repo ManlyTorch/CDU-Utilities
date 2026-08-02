@@ -1,0 +1,23 @@
+modLoader="javafml"
+loaderVersion="[47,)"
+license="GPL-3.0"
+
+[[dependencies.cduprofiledisplay]]
+    modId="forge"
+    mandatory=true
+    versionRange="[47.4.0,)"
+    ordering="NONE"
+    side="CLIENT"
+
+[[dependencies.cduprofiledisplay]]
+    modId="minecraft"
+    mandatory=true
+    versionRange="[1.20.1,1.21)"
+    ordering="NONE"
+    side="CLIENT"
+
+[[mods]]
+    modId="cduprofiledisplay"
+    version="1.0.0"
+    displayName="CDU Profile Display"
+    description="Allows you to easily see the stats of a player in-game."
