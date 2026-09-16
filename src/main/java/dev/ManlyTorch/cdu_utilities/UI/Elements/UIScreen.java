@@ -23,9 +23,7 @@ public class UIScreen extends Screen {
         rootFrame.screen = this;
     };
 
-    public Font getFont() {
-        return this.font;
-    };
+    public Font getFont() { return font; }
     
     @Override
     public void render(GuiGraphics gg, int mouseX, int mouseY, float partialTick) {

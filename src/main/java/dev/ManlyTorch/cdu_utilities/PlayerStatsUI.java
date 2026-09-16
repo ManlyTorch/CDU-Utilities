@@ -1,8 +1,6 @@
 package dev.ManlyTorch.cdu_utilities;
 
-import dev.ManlyTorch.cdu_utilities.Lib.HTTPService;
-import dev.ManlyTorch.cdu_utilities.Lib.ImageCacher;
-import dev.ManlyTorch.cdu_utilities.Lib.ImageCacher.LoadedTexture;
+import dev.ManlyTorch.cdu_utilities.Lib.*;
 import dev.ManlyTorch.cdu_utilities.UI.Elements.*;
 import dev.ManlyTorch.cdu_utilities.UI.Types.*;
 import dev.ManlyTorch.cdu_utilities.UI.Enums.*;
@@ -10,37 +8,22 @@ import dev.ManlyTorch.cdu_utilities.UI.Elements.ImageLabel.BlitOptions;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 import com.google.gson.JsonElement;
-import com.mojang.authlib.GameProfile;
 
 import net.minecraft.client.gui.screens.ChatScreen;
-import net.minecraft.client.multiplayer.PlayerInfo;
-import net.minecraft.client.resources.DefaultPlayerSkin;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 
-import java.io.File;
-import java.io.FileReader;
-import java.io.FileWriter;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
-
-/*TODO:
-- Make it FUNCTION
-- Awards
-*/
 
 public class PlayerStatsUI {
-    // private static final Logger LOGGER = LogUtils.getLogger();
     private static final int DISCORD_LINKED_COLOR = 0xff57f287;
     private static final int COLOR_TEXT_MUTED = 0xffafafaf;
     private static final int DIVIDER_COLOR = 0xff2a2a30;
@@ -63,7 +46,6 @@ public class PlayerStatsUI {
     public static TextButton discordLabel;
     public static TextLabel lastSeenLabel;
     public static TextLabel usernameLabel;
-    public static JsonObject playerStats;
     public static Map<String, ImageLabel> awardLabels = new HashMap<>();
     public static Map<String, StatLabels> statLabels = new HashMap<>();
     public static List<StatRow> statRows = List.of(
@@ -85,19 +67,20 @@ public class PlayerStatsUI {
         new StatRow("Walked", "mc_distancewalked")
     );
     public record StatRow(String idx, String val) {}
+    public record StatLabels(TextLabel nameLabel, TextLabel valueLabel) {};
+    public static final MutableComponent fetching = Component.literal("Fetching stats for ").withStyle(ChatFormatting.GRAY);
 
     private static UIScreen screen = new UIScreen("CDUStatsDisplay");
 
-    private PlayerStatsUI() { loadCache(); buildLayout(); }
+    private PlayerStatsUI() { buildRoot(); }
     public static PlayerStatsUI getInstance() { return classObj; }
 
     private static final int AWARD_GAPSIZE = AWARD_GAP + AWARD_SIZE;
+    private static final int blockTop = PADDING + 16 + 8;
+    private static final int blockBottom = blockTop + 16 * ROW_HEIGHT;
+    private static final int awardsY = blockBottom + 10;
 
-    public static void buildLayout() {
-        int blockTop = PADDING + 16 + 8;
-        int blockBottom = blockTop + 16 * ROW_HEIGHT;
-        int awardsY = blockBottom + 10;
-
+    public static void buildRoot() {
         root = new Frame()
             .setPosition(UDim2.fromScale(0.5, 0.5))
             .setAnchorPoint(new Vector2(0.5, 0.5))
@@ -140,6 +123,12 @@ public class PlayerStatsUI {
             .setBorderColor(BLANK)
             .setParent(root);
 
+        buildUser();
+        buildAwards();
+        buildStatRows();
+    }
+    
+    public static void buildUser() {
         playerImage = new ImageLabel()
             .setTCache("skins")
             .addBlitOption(new BlitOptions(8f, 8f, 8, 8, 64, 64))
@@ -169,19 +158,22 @@ public class PlayerStatsUI {
             .setBorderColor(BLANK)
             .setHoverColor(BLANK)
             .setParent(usernameLabel);
-        float[] decayTime = { System.currentTimeMillis() };
+        List<Long> decayTime = new ArrayList<>();
+        decayTime.add(System.currentTimeMillis());
         discordLabel.MouseHovered.onEvent(renderParams -> {
             if (discordLinked == false) return;
             float curTime = System.currentTimeMillis();
-            Component text = Component.literal(curTime <= decayTime[0] ? "Copied " + discordId : "Copy " + discordId);
+            Component text = Component.literal((curTime <= decayTime.get(0) ? "Copied " + discordId : "Copy " + discordId));
             renderParams.gg().renderTooltip(screen.getFont(), text, renderParams.x(), renderParams.y());
         });
         discordLabel.MouseButton1Clicked.onEvent(renderParams -> {
             if (discordLinked == false) return;
             Minecraft.getInstance().keyboardHandler.setClipboard(String.valueOf(discordId));
-            decayTime[0] = System.currentTimeMillis() + COPIED_COOLDOWN*1000;
+            decayTime.set(0, System.currentTimeMillis() + COPIED_COOLDOWN*1000);
         });
-
+    }
+    
+    public static void buildAwards() {
         @SuppressWarnings("unused")
         TextLabel awardsHeader = new TextLabel()
             .setText(Component.literal("Awards"))
@@ -200,7 +192,9 @@ public class PlayerStatsUI {
             .setPosition(UDim2.fromOffset(PADDING, awardsY + 12))
             .setSize(new UDim2(1, -PADDING * 2, 0, 1))
             .setParent(root);
+    }
 
+    public static void buildStatRows() {
         int statsX = PADDING + HEAD_SIZE + PADDING * 2;
         int row = 0;
         UDim2 statSize = new UDim2(1, -statsX - PADDING, 0, ROW_HEIGHT);
@@ -231,126 +225,113 @@ public class PlayerStatsUI {
     public static void loadPlayerStats(String username, Screen prevScreen) {
         returnScreen = prevScreen;
         Minecraft mc = Minecraft.getInstance();
-        Thread t = new Thread(() -> { threadedPlayerStats(mc, username); });
-        t.setUncaughtExceptionHandler((thread, ex) -> { ex.printStackTrace(); });
-        t.start();
-    }
-
-    private static void threadedPlayerStats(Minecraft mc, String username) {
-        Component msg = Component.literal("Fetching stats for ").withStyle(ChatFormatting.GRAY)
-            .append(Component.literal(username).withStyle(ChatFormatting.WHITE));
-        mc.player.displayClientMessage(msg, true);
-        String uuid = resolveUUID(username.toLowerCase());
-        if (uuid == null) {
-            mc.player.displayClientMessage(
-                Component.literal("User ").withStyle(ChatFormatting.RED)
-                    .append(Component.literal(username).withStyle(ChatFormatting.WHITE)
-                        .append(Component.literal(" does not exist.").withStyle(ChatFormatting.RED))),
-                false
-            );
-            return;
-        }
-
-        // check if the user has played or get req failed
-        JsonObject fetchedData = fetchCDUData(uuid, username);
-        if (fetchedData == null) {
-            mc.player.displayClientMessage(Component.literal("Couldn't load stats for ").withStyle(ChatFormatting.RED)
-            .append(Component.literal(username).withStyle(ChatFormatting.WHITE)), true);
-            return;
-        }
-        if (!fetchedData.has("player_stats")) {
-            if (fetchedData.has("details")
-                && fetchedData.get("details").getAsString().equals("'NoneType' object has no attribute 'get'")) {
-                Component message = Component.literal("User ").withStyle(ChatFormatting.RED)
-                    .append(Component.literal(username).withStyle(ChatFormatting.WHITE)
-                        .append(Component.literal(" hasn't played CDU.").withStyle(ChatFormatting.RED)));
-                mc.player.displayClientMessage(message, true);
-                return;
-            } else System.err.println("CDU API returned unexpected JSON: " + fetchedData.toString());
-        }
-        JsonObject playerStats = fetchedData.getAsJsonObject("player_stats");
-        JsonArray awards = playerStats.getAsJsonArray("player_awards");
-        String skin_url = SkinManager.getSkin(uuid, username);
-        for (JsonElement element : awards) {
-            JsonObject award = element.getAsJsonObject();
-            String imgUrl = award.get("img_url").getAsString();
-            ImageCacher.fetchImage("awards", imgUrl);
-        }
-
-        // Update UI inside main thread
-        mc.execute(() -> {
-            // misc
-            usernameLabel.setText(Component.literal(playerStats.get("username").getAsString()));
-            lastSeenLabel.setText(Component.literal(playerStats.get("lastjoinedservername").getAsString()));
-
-            discordId = playerStats.get("discordid").getAsLong();
-            discordLinked = discordId != null;
-            int discordColor = discordLinked ? DISCORD_LINKED_COLOR : COLOR_TEXT_MUTED;
-            discordLabel.setTextColor(discordColor);
-            discordLabel.setText(Component.literal(discordLinked ? "Discord Linked" : "Discord Not Linked")
-                .withStyle(style -> style.withUnderlined(discordLinked)));
-
-            if (skin_url != null) {
-                playerImage.imgURL = skin_url;
-            } else {
-                playerImage.backupImg = new LoadedTexture(DefaultPlayerSkin.getDefaultSkin(UUID.fromString(playerStats.get("uuid").getAsString())), 64, 64);
-            }
-
-            // stats
-            for (StatRow statRow : statRows) {
-                String strVal = statRow.idx() == "Playtime" ? playerStats.get(statRow.val()).getAsString() : formatNumber(playerStats.get(statRow.val()).getAsLong());
-                statLabels.get(statRow.idx()).valueLabel().setText(Component.literal(strVal));
-            }
-
-            // awards
-            int awardY = PADDING + (16 * ROW_HEIGHT) + AWARD_GAP + 46;
-            int curX = PADDING;
-            int lastRow = 0;
-            int curAward = 0;
-            List<String> nonDuplicateAwards = new ArrayList<>();
-            for (JsonElement element : awards) {
-                if (!element.isJsonObject()) continue;
-                JsonObject award = element.getAsJsonObject();
-                String awardName = award.get("award_name").getAsString();
-                if (nonDuplicateAwards.contains(awardName)) continue;
-                nonDuplicateAwards.add(awardName);
-                ImageLabel awardDisplay = awardLabels.get(awardName);
-                if (awardDisplay == null) {
-                    Component desc = Component.literal(award.get("award_description").getAsString());
+        Component userComp = Component.literal(username).withStyle(ChatFormatting.WHITE);
+        mc.player.displayClientMessage(fetching.copy().append(userComp), true);
+        Thread mainThread;
+        mainThread = createThread(() -> {
+            String uuid = MojangService.getUUIDfromName(username.toLowerCase());
+            if (uuid == null) return;
+            String[] skinURL = new String[1];
+            JsonObject[] playerStats = new JsonObject[1];
+            Thread skinThread = runThread(() -> { skinURL[0] = MojangService.getSkin(uuid, username); });
+            Thread cduThread = runThread(() -> {
+                playerStats[0] = CDUService.getPlayerData(uuid, username);
+                // load award icons
+                JsonArray awards = playerStats[0].getAsJsonArray("player_awards");
+                List<Thread> threads = new ArrayList<>();
+                for (JsonElement element : awards) {
+                    JsonObject award = element.getAsJsonObject();
                     String imgUrl = award.get("img_url").getAsString();
-                    awardDisplay = new ImageLabel()
-                        .setImgURL(imgUrl)
-                        .setTCache("awards")
-                        .setBackgroundColor(AWARD_COLOR)
-                        .setSize(UDim2.fromOffset(AWARD_SIZE, AWARD_SIZE));
-                    awardLabels.put(awardName, awardDisplay);
-                    awardDisplay.MouseHovered.onEvent(renderParams -> {
-                        renderParams.gg().renderTooltip(screen.getFont(), desc, renderParams.x(), renderParams.y());
-                    });
+                    Thread t = runThread(() -> ImageCacher.fetchImage("awards", imgUrl));
+                    threads.add(t);
                 }
-                int curRow = (int)Math.floor(curAward / AWARDS_PER_ROW);
-                if (curRow != lastRow) { curX = PADDING; lastRow = curRow; }
-                if (curAward - curRow * AWARDS_PER_ROW == 5) curX += 2;
-                awardDisplay
-                    .setPosition(UDim2.fromOffset(curX, awardY + curRow * AWARD_GAPSIZE))
-                    .setParent(root);
-                curX += AWARD_GAPSIZE;
-                curAward++;
-            }
-
-            for (Map.Entry<String, ImageLabel> entry : awardLabels.entrySet()) {
-                ImageLabel label = entry.getValue();
-                String awardName = entry.getKey();
-                if (nonDuplicateAwards.contains(awardName) == false) label.setParent(null);
-            }
-
-            int curRow = (int)Math.floor((nonDuplicateAwards.size()-1) / AWARDS_PER_ROW);
-            int computedHeight = awardY + AWARD_SIZE + PADDING + curRow * AWARD_GAPSIZE;
-            root.setSize(UDim2.fromOffset(STATS_WIDTH, computedHeight));
-
-            mc.setScreen(screen);
-            screen.recalculate();
+                for (Thread t : threads) {
+                    try { t.join(); }
+                    catch (InterruptedException e) { Thread.currentThread().interrupt(); return; }
+                }
+            });
+            try { skinThread.join(); cduThread.join(); }
+            catch (InterruptedException e) { Thread.currentThread().interrupt(); return; }
+            if (skinURL[0] == null || playerStats[0] == null) return;
+            updateUI(playerStats[0], skinURL[0]);
+            mc.execute(() -> mc.setScreen(screen));
         });
+        mainThread.start();
+    };
+
+    public static Thread createThread(Runnable callback) {
+        Thread t = new Thread(callback);
+        t.setUncaughtExceptionHandler((thread, ex) -> { ex.printStackTrace(); });
+        return t;
+    };
+    public static Thread runThread(Runnable callback) { Thread t = createThread(callback); t.start(); return t; }
+
+    private static void updateUI(JsonObject playerStats, String skin_url) {
+        // misc
+        usernameLabel.setText(Component.literal(playerStats.get("username").getAsString()));
+        lastSeenLabel.setText(Component.literal(playerStats.get("lastjoinedservername").getAsString()));
+
+        discordId = playerStats.get("discordid").getAsLong();
+        discordLinked = discordId != null;
+        int discordColor = discordLinked ? DISCORD_LINKED_COLOR : COLOR_TEXT_MUTED;
+        discordLabel.setTextColor(discordColor);
+        discordLabel.setText(Component.literal(discordLinked ? "Discord Linked" : "Discord Not Linked")
+            .withStyle(style -> style.withUnderlined(discordLinked)));
+        
+        playerImage.imgURL = skin_url;
+
+        // stats
+        for (StatRow statRow : statRows) {
+            String strVal = statRow.idx() == "Playtime" ? playerStats.get(statRow.val()).getAsString() : formatNumber(playerStats.get(statRow.val()).getAsLong());
+            statLabels.get(statRow.idx()).valueLabel().setText(Component.literal(strVal));
+        }
+
+        // awards
+        int awardY = PADDING + (16 * ROW_HEIGHT) + AWARD_GAP + 46;
+        int curX = PADDING;
+        int lastRow = 0;
+        int curAward = 0;
+        List<String> nonDuplicateAwards = new ArrayList<>();
+        for (JsonElement element : playerStats.getAsJsonArray("player_awards")) {
+            if (!element.isJsonObject()) continue;
+            JsonObject award = element.getAsJsonObject();
+            String awardName = award.get("award_name").getAsString();
+            if (nonDuplicateAwards.contains(awardName)) continue;
+            nonDuplicateAwards.add(awardName);
+            ImageLabel awardDisplay = awardLabels.get(awardName);
+            if (awardDisplay == null) {
+                Component desc = Component.literal(award.get("award_description").getAsString());
+                String imgUrl = award.get("img_url").getAsString();
+                awardDisplay = new ImageLabel()
+                    .setImgURL(imgUrl)
+                    .setTCache("awards")
+                    .setBackgroundColor(AWARD_COLOR)
+                    .setSize(UDim2.fromOffset(AWARD_SIZE, AWARD_SIZE));
+                awardLabels.put(awardName, awardDisplay);
+                awardDisplay.MouseHovered.onEvent(renderParams -> {
+                    renderParams.gg().renderTooltip(screen.getFont(), desc, renderParams.x(), renderParams.y());
+                });
+            }
+            int curRow = (int)Math.floor(curAward / AWARDS_PER_ROW);
+            if (curRow != lastRow) { curX = PADDING; lastRow = curRow; }
+            if (curAward - curRow * AWARDS_PER_ROW == 5) curX += 2;
+            awardDisplay
+                .setPosition(UDim2.fromOffset(curX, awardY + curRow * AWARD_GAPSIZE))
+                .setParent(root);
+            curX += AWARD_GAPSIZE;
+            curAward++;
+        }
+
+        for (Map.Entry<String, ImageLabel> entry : awardLabels.entrySet()) {
+            ImageLabel label = entry.getValue();
+            String awardName = entry.getKey();
+            if (nonDuplicateAwards.contains(awardName) == false) label.setParent(null);
+        }
+
+        int curRow = (int)Math.floor((nonDuplicateAwards.size()-1) / AWARDS_PER_ROW);
+        int computedHeight = awardY + AWARD_SIZE + PADDING + curRow * AWARD_GAPSIZE;
+        root.setSize(UDim2.fromOffset(STATS_WIDTH, computedHeight));
+        screen.recalculate();
     }
 
     public static void close() {
@@ -358,72 +339,7 @@ public class PlayerStatsUI {
         mc.setScreen(returnScreen instanceof ChatScreen ? null : returnScreen);
     };
 
-    public record StatLabels(TextLabel nameLabel, TextLabel valueLabel) {};
     private static String formatNumber(long value) { return String.format(Locale.US, "%,d", value);};
-
-    private static final long STATS_CACHE_MS = 300_000;
-    private static final ConcurrentHashMap<String, CacheEntry> STATS_CACHE = new ConcurrentHashMap<>();
-    private record CacheEntry(JsonObject data, long timestamp) {};
-
-    public static JsonObject fetchCDUData(String uuid, String username) {
-        CacheEntry cached = STATS_CACHE.get(uuid);
-        if (cached != null && System.currentTimeMillis() - cached.timestamp() < STATS_CACHE_MS) return cached.data().deepCopy();
-        try {
-            JsonObject stats = HTTPService.getJson("api.playcdu.co/users/uuid/?uuid=" + uuid);
-            STATS_CACHE.put(uuid, new CacheEntry(stats, System.currentTimeMillis()));
-            return stats.deepCopy();
-        } catch (IOException e) { e.printStackTrace(); }
-        return null;
-    };
-
-    private static final File UUID_FILE = new File("cdu_usercache.json");
-    private static final Map<String, String> UUID_CACHE = new HashMap<>();
-
-    public static String resolveUUID(String username) {
-        String cached = UUID_CACHE.get(username);
-        if (cached != null) return cached;
-        Minecraft mc = Minecraft.getInstance();
-        if (mc.getConnection() != null) {
-            for (PlayerInfo info : mc.getConnection().getOnlinePlayers()) {
-                GameProfile prof = info.getProfile();
-                String name = prof.getName();
-                if (!name.equalsIgnoreCase(username)) continue;
-                String uuid = prof.getId().toString().replace("-", "");
-                UUID_CACHE.put(name.toLowerCase(), uuid);
-                return uuid;
-            }
-        }
-        return fetchUUID(username);
-    }
-
-    public static String fetchUUID(String username) {
-        try {
-            String uuid = HTTPService.getJson("api.mojang.com/users/profiles/minecraft/" + username).get("id").getAsString();
-            UUID_CACHE.put(username, uuid); saveCache(); return uuid;
-        } catch (Exception e) {
-            throw new RuntimeException("Couldn't resolve a UUID for '" + username + "': " + e.getMessage(), e);
-        }
-    }
-
-    private static void loadCache() {
-        if (!UUID_FILE.exists()) return;
-        try (FileReader reader = new FileReader(UUID_FILE)) {
-            JsonObject json = JsonParser.parseReader(reader).getAsJsonObject();
-            for (Map.Entry<String, JsonElement> entry : json.entrySet()) {
-                UUID_CACHE.put(entry.getKey(), entry.getValue().getAsString());
-            };
-        } catch (Exception ignored) {};
-    };
-
-    private static void saveCache() {
-        try (FileWriter writer = new FileWriter(UUID_FILE)) {
-            JsonObject json = new JsonObject();
-            for (Map.Entry<String, String> entry : UUID_CACHE.entrySet()) {
-                json.addProperty(entry.getKey(), entry.getValue().toString());
-            };
-            writer.write(json.toString());
-        } catch (Exception ignored) {};
-    };
 
     private static PlayerStatsUI classObj = new PlayerStatsUI();
 }

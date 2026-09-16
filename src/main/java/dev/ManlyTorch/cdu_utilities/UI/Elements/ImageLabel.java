@@ -2,19 +2,12 @@ package dev.ManlyTorch.cdu_utilities.UI.Elements;
 
 import dev.ManlyTorch.cdu_utilities.Lib.*;
 import dev.ManlyTorch.cdu_utilities.UI.Types.*;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.server.packs.resources.Resource;
 
-import com.mojang.blaze3d.platform.NativeImage;
 import com.mojang.blaze3d.systems.RenderSystem;
 
 import java.util.List;
 import java.util.ArrayList;
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.Optional;
 
 public class ImageLabel extends Frame {
     public String imgURL;

@@ -39,9 +39,8 @@ public final class ImageCacher {
         if (imgUrl == null || imgUrl.isBlank()) return null;
         State state = STATE.get(imgUrl);
         if (state == State.READY) return TEXTURES.get(imgUrl);
-        if (state != null) return null;
+        else if (state != null) return null;
         String targetCache = tCache != null ? tCache : "NULL";
-
         STATE.put(imgUrl, State.LOADING);
         NativeImage image = loadCached(targetCache, imgUrl);
         if (image == null) image = HTTPService.getImage(imgUrl);
