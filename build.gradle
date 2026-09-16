@@ -4,7 +4,13 @@ plugins {
 }
 
 version = "${mod_version}"
-group = 'com.example.cduprofiledisplay'
+group = 'dev.ManlyTorch.cdu_utilities'
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(17)
+    }
+}
 
 minecraft {
     mappings channel: 'official', version: "${minecraft_version}"
@@ -12,7 +18,7 @@ minecraft {
         client {
             workingDirectory project.file('run')
             property 'forge.logging.console.level', 'debug'
-            mods { cduprofiledisplay { source sourceSets.main } }
+            mods { cduutils { source sourceSets.main } }
         }
     }
 }
@@ -22,7 +28,7 @@ dependencies {
 }
 
 jar.manifest.attributes([
-    'Specification-Title'   : 'CDU Profile Display',
+    'Specification-Title'   : 'CDU-Utilities',
     'Specification-Version' : '1',
     'Implementation-Title'  : project.name,
     'Implementation-Version': project.jar.archiveVersion

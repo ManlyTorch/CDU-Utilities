@@ -4,4 +4,4 @@ pluginManagement {
         maven { url = 'https://maven.minecraftforge.net/' }
     }
 }
-rootProject.name = 'CDU Profile Display'
+rootProject.name = 'CDU-Utilities'
