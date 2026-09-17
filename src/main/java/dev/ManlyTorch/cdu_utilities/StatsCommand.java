@@ -8,7 +8,10 @@ import net.minecraftforge.client.event.RegisterClientCommandsEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 
+import java.util.List;
+import java.util.ArrayList;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static com.mojang.brigadier.arguments.StringArgumentType.getString;
 import static com.mojang.brigadier.arguments.StringArgumentType.word;
@@ -26,12 +29,11 @@ public final class StatsCommand {
                 .suggests((context, builder) -> {
                     Minecraft mc = Minecraft.getInstance();
                     ClientPacketListener con = mc.getConnection();
-                    if (con == null) return builder.buildFuture();
+                    List<String> customNames = List.of("ManlyTorch", "Anti_Hydrogen", "ToxicogenicBees", "DerpDude", "Oliviajumba");
+                    if (con == null) return SharedSuggestionProvider.suggest(customNames, builder);
+                    Stream<String> onlineUsers = con.getOnlinePlayers().stream().map(info -> info.getProfile().getName());
                     return SharedSuggestionProvider.suggest(
-                        con.getOnlinePlayers().stream()
-                            .map(info -> info.getProfile().getName())
-                            .collect(Collectors.toList()),
-                        builder
+                        Stream.concat(customNames.stream(), onlineUsers).distinct().toList(), builder
                     );
                 })
                 .executes(ctx -> {

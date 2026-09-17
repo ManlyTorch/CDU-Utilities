@@ -69,6 +69,13 @@ public class PlayerStatsUI {
     public record StatRow(String idx, String val) {}
     public record StatLabels(TextLabel nameLabel, TextLabel valueLabel) {};
     public static final MutableComponent fetching = Component.literal("Fetching stats for ").withStyle(ChatFormatting.GRAY);
+    public static final List<String> rainbowUUIDs = List.of(
+        "4772296d-7c7e-4744-9a78-953d76dd8ac0", // ManlyTorch Creator
+        "ac09fc69-61d0-4a36-bf33-e9f8e8f98cae", // DerpDude f
+        "59edeebc4bd244e2bb14c8cc1d131530", // MEE5 f
+        "1418475b-1029-4a9a-af78-fbf5d59dfee0", // Sauramel CDU owner
+        "39bddbb3-e4ca-4be1-9b37-7ec36082817b" // OliviaJumba CDU owner
+    );
 
     private static UIScreen screen = new UIScreen("CDUStatsDisplay");
 
@@ -249,7 +256,7 @@ public class PlayerStatsUI {
             try { skinThread.join(); cduThread.join(); }
             catch (InterruptedException e) { Thread.currentThread().interrupt(); return; }
             if (skinURL[0] == null ) return;
-            updateUI(playerStats[0], username, MojangService.UUIDFromString(uuid), skinURL[0]);
+            updateUI(playerStats[0], playerStats[0].get("username").getAsString(), MojangService.UUIDFromString(uuid), skinURL[0]);
             mc.execute(() -> mc.setScreen(screen));
         });
         mainThread.start();
@@ -264,7 +271,8 @@ public class PlayerStatsUI {
 
     private static void updateUI(JsonObject playerStats, String username, UUID uuid, String skin_url) {
         // misc
-        usernameLabel.setText(Component.literal(playerStats.get("username").getAsString()));
+        usernameLabel.setText(Component.literal(username));
+        usernameLabel.rainbowText = rainbowUUIDs.contains(uuid.toString());
         lastSeenLabel.setText(Component.literal(playerStats.get("lastjoinedservername").getAsString()));
 
         discordId = playerStats.get("discordid").getAsLong();
@@ -274,7 +282,7 @@ public class PlayerStatsUI {
         discordLabel.setText(Component.literal(discordLinked ? "Discord Linked" : "Discord Not Linked")
             .withStyle(style -> style.withUnderlined(discordLinked)));
         
-        playerDisplay.username = playerStats.get("username").getAsString();
+        playerDisplay.username = username;
         playerDisplay.setSkinURL(skin_url)
             .setUsername(username)
             .setUUID(uuid);

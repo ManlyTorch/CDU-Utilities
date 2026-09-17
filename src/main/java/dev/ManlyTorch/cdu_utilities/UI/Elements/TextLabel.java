@@ -7,12 +7,17 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.Font;
 import net.minecraft.network.chat.Component;
 
+import java.awt.Color;
+
 public class TextLabel extends Frame {
     public int textColor = 0xffffffff;
     public Component text = Component.literal("TextLabel");
     public TextAlignment textXAlignment = TextAlignment.CENTER;
     public TextAlignment textYAlignment = TextAlignment.CENTER;
     public boolean textShadow = false;
+    public boolean rainbowText = false;
+    public float speed = 0.4f;
+    public float depth = 0.08f;
     public Vector2 textPadding = new Vector2();
     
     @Override
@@ -31,8 +36,34 @@ public class TextLabel extends Frame {
         else if (textXAlignment.equals(TextAlignment.RIGHT)) { x += absoluteSize.x-width+textPadding.x; };
         if (textYAlignment.equals(TextAlignment.CENTER)) { y += absoluteSize.y/2+textPadding.y-height/2+1; }
         else if (textYAlignment.equals(TextAlignment.BOTTOM)) { y += absoluteSize.y-height+textPadding.y; };
-        gg.drawString(font, text, x, y, textColor, textShadow);
+        if (rainbowText) drawRainbowGradientText(gg, font, text.getString(), x, y, depth, speed);
+        else gg.drawString(font, text, x, y, textColor, textShadow);
     };
+    private void drawRainbowGradientText(GuiGraphics gg, Font font, String text, int x, int y, float depth, float speed) {
+        float time = (System.currentTimeMillis() % 100000L) / 1000f;
+        int cursorX = x;
+        int charHeight = font.lineHeight;
+        int slices = 6;
+
+        for (int i = 0; i < text.length(); i++) {
+            String s = String.valueOf(text.charAt(i));
+            float baseHue = ((i * depth) + (time * speed)) % 1.0f;
+            for (int slice = 0; slice < slices; slice++) {
+                float sliceT = slice / (float) (slices - 1);
+                float hue = (baseHue + sliceT * 0.08f) % 1.0f;
+                int color = 0xFF000000 | Color.HSBtoRGB(hue, 1.0f, 1.0f);
+
+                int sliceYStart = y + (slice * charHeight) / slices;
+                int sliceYEnd = y + ((slice + 1) * charHeight) / slices;
+
+                gg.enableScissor(cursorX, sliceYStart, cursorX + font.width(s) + 1, sliceYEnd);
+                gg.drawString(font, s, cursorX, y, color, true);
+                gg.disableScissor();
+            }
+
+            cursorX += font.width(s);
+        }
+    }
 
     @Override
     public void updateCalculations() {
