@@ -32,10 +32,18 @@ public class TextLabel extends Frame {
         if (font == null) return;
         int width = font.width(text); int height = font.lineHeight;
         int x = (int)absolutePosition.x; int y = (int)absolutePosition.y;
-        if (textXAlignment.equals(TextAlignment.CENTER)) { x += absoluteSize.x/2+textPadding.x-width/2+1; }
-        else if (textXAlignment.equals(TextAlignment.RIGHT)) { x += absoluteSize.x-width+textPadding.x; };
-        if (textYAlignment.equals(TextAlignment.CENTER)) { y += absoluteSize.y/2+textPadding.y-height/2+1; }
-        else if (textYAlignment.equals(TextAlignment.BOTTOM)) { y += absoluteSize.y-height+textPadding.y; };
+        if (automaticSize) {
+            if (textXAlignment == TextAlignment.LEFT) { x += textPadding.x; }
+            else if (textXAlignment == TextAlignment.CENTER) { x += (absoluteSize.x - width) / 2 + textPadding.x; }
+            else if (textXAlignment == TextAlignment.RIGHT) { x += -width + textPadding.x; }
+        } else {
+            if (textXAlignment == TextAlignment.LEFT) { x += textPadding.x; }
+            else if (textXAlignment == TextAlignment.CENTER) { x += absoluteSize.x/2+textPadding.x-width/2; }
+            else if (textXAlignment == TextAlignment.RIGHT) { x += absoluteSize.x-width+textPadding.x; }
+        }
+        if (textYAlignment == TextAlignment.CENTER) { y += absoluteSize.y/2+textPadding.y-height/2; }
+        else if (textYAlignment == TextAlignment.BOTTOM) { y += absoluteSize.y-height+textPadding.y; }
+        else if (textYAlignment == TextAlignment.TOP) { y += textPadding.y; }
         if (rainbowText) drawRainbowGradientText(gg, font, text.getString(), x, y, depth, speed);
         else gg.drawString(font, text, x, y, textColor, textShadow);
     };
@@ -79,7 +87,7 @@ public class TextLabel extends Frame {
         int x = (int)position.x.offset + (int)(position.x.scale * parent.absoluteSize.x + parent.absolutePosition.x) - (int)(anchorPoint.x * xs);
         int y = (int)position.y.offset + (int)(position.y.scale * parent.absoluteSize.y + parent.absolutePosition.y) - (int)(anchorPoint.y * ys);
         absolutePosition.x = x; absolutePosition.y = y;
-        absoluteSize .x = xs; absoluteSize.y = ys;
+        absoluteSize.x = xs; absoluteSize.y = ys;
         for (Frame child : children) {
             child.updateCalculations();
         };
@@ -87,6 +95,7 @@ public class TextLabel extends Frame {
 
     public TextLabel setParent(Frame parent) { super.setParent(parent); return this; }
     public TextLabel setText(Component comp) { this.text = comp; if (automaticSize) this.updateCalculations(); return this; }
+    public TextLabel setRainbowText(boolean b) { this.rainbowText = b; return this; }
     public TextLabel setTextColor(int c) { this.textColor = c; return this; }
     public TextLabel setTextXAlignment(TextAlignment alignment) { this.textXAlignment = alignment; return this; }
     public TextLabel setTextYAlignment(TextAlignment alignment) { this.textYAlignment = alignment; return this; }

@@ -32,7 +32,9 @@ import java.util.UUID;
 public class PlayerStatsUI {
     private static final int DISCORD_LINKED_COLOR = 0xff57f287;
     private static final int COLOR_TEXT_MUTED = 0xffafafaf;
+    private static final int USERNAME_COLOR = 0xff55ffff;
     private static final int DIVIDER_COLOR = 0xff2a2a30;
+    private static final int LBSPOT_COLOR = 0xff55ffff;
     private static final int AWARD_COLOR = 0xff2e2e2e;
     private static final int BLANK = 0x00000000;
     private static final int PADDING = 12;
@@ -85,10 +87,26 @@ public class PlayerStatsUI {
         new StatRow("Swum", "mc_distanceswum"),
         new StatRow("Walked", "mc_distancewalked")
     );
+    public static Map<String, String> lbStats = Map.ofEntries(
+        Map.entry("playtime", "playtime"),
+        Map.entry("mc_blocksbroken", "mc_blocks_broken"),
+        Map.entry("mc_deaths", "mc_deaths"),
+        Map.entry("mc_distance", "mc_distance"),
+        Map.entry("mc_distanceclimbed", "mc_distance_climbed"),
+        Map.entry("mc_distancecrouched", "mc_distance_crouched"),
+        Map.entry("mc_distancefallen", "mc_distance_fallen"),
+        Map.entry("mc_distanceflown", "mc_distance_flown"),
+        Map.entry("mc_distancesprinted", "mc_distance_sprinted"),
+        Map.entry("mc_distanceswum", "mc_distance_swum"),
+        Map.entry("mc_distancewalked", "mc_distance_walked"),
+        Map.entry("mc_jumps", "mc_jumps"),
+        Map.entry("mc_mobs_killed", "mc_mobs_killed"),
+        Map.entry("mc_players_killed", "mc_players_killed")
+    );
     public static final List<String> rainbowUUIDs = List.of(
         "4772296d-7c7e-4744-9a78-953d76dd8ac0",
         "ac09fc69-61d0-4a36-bf33-e9f8e8f98cae",
-        "59edeebc4bd244e2bb14c8cc1d131530",
+        "59edeebc-4bd2-44e2-bb14-c8cc1d131530",
         "1418475b-1029-4a9a-af78-fbf5d59dfee0",
         "39bddbb3-e4ca-4be1-9b37-7ec36082817b"
     );
@@ -97,9 +115,13 @@ public class PlayerStatsUI {
         2, "nd",
         3, "rd"
     );
+    public static final Map<Integer, Integer> lbColors = Map.of(
+        2, 0xff515151,
+        3, 0xffaa6428
+    );
 
     public record StatRow(String idx, String val) {}
-    public record StatLabels(TextLabel nameLabel, TextLabel valueLabel) {};
+    public record StatLabels(TextLabel nameLabel, TextLabel statLBLabel, TextLabel valueLabel) {};
 
     public static final MutableComponent fetching = Component.literal("Fetching stats for ").withStyle(ChatFormatting.GRAY);
 
@@ -171,16 +193,6 @@ public class PlayerStatsUI {
             .setBackgroundColor(BLANK)
             .setParent(root);
 
-        usernameLabel = new TextLabel()
-            .setText(Component.literal("Username"))
-            .setTextColor(0xff55ffff)
-            .setPosition(new UDim2(.5, 0, 1, 5))
-            .setAnchorPoint(new Vector2(.5))
-            .setAutomaticSize(true)
-            .setBackgroundColor(BLANK)
-            .setBorderColor(BLANK)
-            .setParent(playerDisplay);
-
         serverBoosterImage = new ImageLabel()
             .setImgURL("boosterIcon")
             .setPosition(new UDim2(1, 4, .5))
@@ -189,6 +201,16 @@ public class PlayerStatsUI {
             .setBackgroundColor(BLANK)
             .setBorderColor(BLANK);
         ImageCacher.putTexture("boosterIcon", new LoadedTexture(ResourceLocation.fromNamespaceAndPath("ui", "booster.png"), 250, 250));
+
+        usernameLabel = new TextLabel()
+            .setText(Component.literal("Username"))
+            .setTextColor(USERNAME_COLOR)
+            .setPosition(new UDim2(.5, 0, 1, 5))
+            .setAnchorPoint(new Vector2(.5))
+            .setAutomaticSize(true)
+            .setBackgroundColor(BLANK)
+            .setBorderColor(BLANK)
+            .setParent(playerDisplay);
 
         discordLabel = new TextButton()
             .setText(Component.literal("Discord Not Linked"))
@@ -204,7 +226,7 @@ public class PlayerStatsUI {
         decayTime.add(0L);
         discordLabel.MouseHovered.onEvent(renderParams -> {
             if (discordLinked == false) return;
-            float curTime = System.currentTimeMillis();
+            Long curTime = System.currentTimeMillis();
             Component text = Component.literal((curTime <= decayTime.get(0) ? "Copied " + discordId : "Copy " + discordId));
             renderParams.gg().renderTooltip(screen.getFont(), text, renderParams.x(), renderParams.y());
         });
@@ -240,12 +262,12 @@ public class PlayerStatsUI {
         int row = 0;
         UDim2 statSize = new UDim2(.6, -PADDING, 0, ROW_HEIGHT);
         for (StatRow statRow : statRows) {
-            UDim2 rowPos = new UDim2(.4, 0, 0, blockTop + row * ROW_HEIGHT);
+            int statY = blockTop + row * ROW_HEIGHT;
             TextLabel statLabel = new TextLabel()
                 .setText(Component.literal(statRow.idx()))
                 .setTextColor(COLOR_TEXT_MUTED)
                 .setTextXAlignment(TextAlignment.LEFT)
-                .setPosition(rowPos)
+                .setPosition(new UDim2(.4, 0, 0, statY))
                 .setSize(statSize)
                 .setBackgroundColor(BLANK)
                 .setBorderColor(BLANK)
@@ -253,13 +275,22 @@ public class PlayerStatsUI {
             TextLabel statValue = new TextLabel()
                 .setText(Component.literal("NULL"))
                 .setTextXAlignment(TextAlignment.RIGHT)
-                .setPosition(rowPos)
-                .setSize(statSize)
+                .setPosition(new UDim2(1, -PADDING, 0, statY))
+                .setAutomaticSize(true)
                 .setBackgroundColor(BLANK)
                 .setBorderColor(BLANK)
                 .setParent(root);
+            TextLabel statLBLabel = new TextLabel()
+                .setText(Component.literal("#? "))
+                .setTextXAlignment(TextAlignment.RIGHT)
+                .setPosition(UDim2.fromScale(-1, .5))
+                .setAnchorPoint(new Vector2(0, .5))
+                .setAutomaticSize(true)
+                .setBackgroundColor(BLANK)
+                .setBorderColor(BLANK)
+                .setParent(statValue);
             row++;
-            statLabels.put(statRow.idx(), new StatLabels(statLabel, statValue));
+            statLabels.put(statRow.idx(), new StatLabels(statLabel, statLBLabel, statValue));
         }
     }
 
@@ -276,10 +307,16 @@ public class PlayerStatsUI {
             JsonObject[] playerStats = new JsonObject[1];
             Thread skinThread = runThread(() -> { skinURL[0] = MojangService.getSkin(uuid, username); });
             Thread cduThread = runThread(() -> {
+                // preload leaderboard
+                List<Thread> threads = new ArrayList<>();
+                for (String statCategory : lbStats.values()) {
+                    Thread t = runThread(() -> CDUService.getLeaderboard(statCategory));
+                    threads.add(t);
+                }
+                // fetch playerstats
                 playerStats[0] = CDUService.getPlayerData(uuid, username);
                 // load award icons
                 JsonArray awards = playerStats[0].getAsJsonArray("player_awards");
-                List<Thread> threads = new ArrayList<>();
                 for (JsonElement element : awards) {
                    JsonObject award = element.getAsJsonObject();
                    String imgUrl = award.get("img_url").getAsString();
@@ -315,12 +352,10 @@ public class PlayerStatsUI {
         Component formatted = Component.literal(localTime.format(formatter));
 
         // misc
-        usernameLabel.setText(Component.literal(username));
-        usernameLabel.rainbowText = rainbowUUIDs.contains(uuid.toString());
+        usernameLabel.setText(Component.literal(username)).setRainbowText(rainbowUUIDs.contains(uuid.toString()));
         serverBoosterImage.setParent(playerStats.get("isserverbooster").getAsBoolean() ? usernameLabel : null);
         lastSeenLabel.setText(Component.literal(" " + playerStats.get("lastjoinedservername").getAsString()));
         lastSeenDate.setText(formatted);
-
 
         discordId = playerStats.get("discordid").getAsLong();
         discordLinked = discordId != null;
@@ -336,8 +371,17 @@ public class PlayerStatsUI {
 
         // stats
         for (StatRow statRow : statRows) {
-            String strVal = statRow.idx() == "Playtime" ? playerStats.get(statRow.val()).getAsString() : formatNumber(playerStats.get(statRow.val()).getAsLong());
-            statLabels.get(statRow.idx()).valueLabel().setText(Component.literal(strVal));
+            String displayName = statRow.idx(); String stat = statRow.val(); JsonElement element = playerStats.get(stat);
+            String strVal = displayName == "Playtime" ? element.getAsString() : formatNumber(element.getAsLong());
+            StatLabels labels = statLabels.get(displayName);
+            labels.valueLabel().setText(Component.literal(strVal));
+            TextLabel lbLabel = labels.statLBLabel();
+            lbLabel.setParent(null);
+            if (lbStats.get(stat) == null) continue;
+            Integer lbSpot = CDUService.getLBSpot(uuid.toString(), lbStats.get(stat));
+            if (lbSpot == null) continue;
+            lbLabel.setParent(labels.valueLabel()).setText(Component.literal("#" + lbSpot + " ")).setRainbowText(lbSpot == 1)
+                .setTextColor(lbColors.get(lbSpot) != null ? lbColors.get(lbSpot) : LBSPOT_COLOR);
         }
 
         // awards
