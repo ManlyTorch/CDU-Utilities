@@ -1,6 +1,7 @@
 package dev.ManlyTorch.cdu_utilities.UI.Elements;
 
 import dev.ManlyTorch.cdu_utilities.Lib.ImageCacher;
+import dev.ManlyTorch.cdu_utilities.Lib.MojangService;
 import dev.ManlyTorch.cdu_utilities.UI.Types.UDim2;
 import dev.ManlyTorch.cdu_utilities.UI.Types.Vector2;
 
@@ -41,6 +42,7 @@ public class SkinDisplay extends Frame {
         public FakeSkinPlayer(ClientLevel level, GameProfile profile, ResourceLocation skinTexture) { super(level, profile); this.skinTexture = skinTexture; }
         @Override public ResourceLocation getSkinTextureLocation() { return skinTexture != null ? skinTexture : super.getSkinTextureLocation(); }
         @Override public boolean isModelPartShown(PlayerModelPart part) { return part != PlayerModelPart.CAPE; }
+        @Override public String getModelName() { return MojangService.isSlim(uuid.toString()) ? "slim" : "default"; }
     }
 
     private GameProfile buildProfile() {
@@ -63,11 +65,12 @@ public class SkinDisplay extends Frame {
     }
 
     private void handleDrag(int mouseX, int mouseY) {
+        if (!clicked && !rightClicked) return;
         boolean mouseDown = isMBHeld(1) | isMBHeld(0);
         if (mouseDown && isHovering(mouseX, mouseY) && !dragging) {
             dragging = true; lastMouseX = mouseX; lastMouseY = mouseY;
         } else if (!mouseDown) {
-            dragging = false;
+            clicked = false; rightClicked = false; dragging = false;
         }
         if (dragging) {
             double dx = mouseX - lastMouseX; double dy = mouseY - lastMouseY;

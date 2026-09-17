@@ -16,18 +16,21 @@ import java.io.FileWriter;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import java.util.Base64;
 import java.util.concurrent.ConcurrentHashMap;
 
 import java.io.File;
 
 public final class MojangService {
     public static final Map<String, String> SKIN_URLS = new ConcurrentHashMap<>();
-    private static final File UUID_FILE = new File("cdu_usercache.json");
+    public static final Map<String, Boolean> SKIN_SLIM = new ConcurrentHashMap<>();
+    private static final File SLIM_FILE = new File("config/CDU-Utilities/slimIndex.json");
+    private static final File UUID_FILE = new File("config/CDU-Utilities/cdu_usercache.json");
     private static final Map<String, String> UUID_CACHE = new HashMap<>();
     public static final MutableComponent user = Component.literal("User ").withStyle(ChatFormatting.RED);
     public static final MutableComponent notExist = Component.literal(" does not exist.").withStyle(ChatFormatting.RED);
 
-    private MojangService() { loadCache(); }
+    private MojangService() { loadCache(); loadSlimCache(); }
 
     public static String getSkin(String uuid, String username) {
         if (uuid == null) return null;
@@ -38,6 +41,16 @@ public final class MojangService {
         SKIN_URLS.put(uuid, resolvedUrl);
         ImageCacher.fetchImage("skins", resolvedUrl);
         return resolvedUrl;
+    };
+
+    public static boolean isSlim(String uuid) {
+        if (uuid == null) return false;
+        Boolean cached = SKIN_SLIM.get(uuid);
+        if (cached != null) return cached;
+        boolean slim = fetchSlim(uuid);
+        SKIN_SLIM.put(uuid, slim);
+        saveSlimCache();
+        return slim;
     };
 
     private static String fetchSkinURL(String strUUID, String username) {
@@ -54,6 +67,30 @@ public final class MojangService {
         }
     }
 
+    private static boolean fetchSlim(String uuid) {
+        try {
+            JsonObject profile = HTTPService.getJson("sessionserver.mojang.com/session/minecraft/profile/" + uuid);
+            if (!profile.has("properties")) return false;
+            for (JsonElement element : profile.getAsJsonArray("properties")) {
+                JsonObject property = element.getAsJsonObject();
+                JsonElement name = property.get("name");
+                if (name == null || name.getAsString().equals("textures") == false) continue;
+                if (!property.has("value")) continue;
+                String decoded = new String(Base64.getDecoder().decode(property.get("value").getAsString()));
+                JsonObject textures = JsonParser.parseString(decoded).getAsJsonObject();
+                if (!textures.has("textures")) return false;
+                JsonObject textureObject = textures.getAsJsonObject("textures");
+                if (!textureObject.has("SKIN")) return false;
+                JsonObject skin = textureObject.getAsJsonObject("SKIN");
+                if (!skin.has("metadata")) return false;
+                JsonObject metadata = skin.getAsJsonObject("metadata");
+                if (!metadata.has("model")) return false;
+                return metadata.get("model").getAsString().equalsIgnoreCase("slim");
+            }
+        } catch (Exception ignored) {}
+        return false;
+    };
+    
     public static UUID UUIDFromString(String strUUID) {
         return UUID.fromString(strUUID.replaceFirst( "(\\w{8})(\\w{4})(\\w{4})(\\w{4})(\\w{12})", "$1-$2-$3-$4-$5"));
     }
@@ -96,6 +133,30 @@ public final class MojangService {
             for (Map.Entry<String, JsonElement> entry : json.entrySet()) {
                 UUID_CACHE.put(entry.getKey(), entry.getValue().getAsString());
             };
+        } catch (Exception ignored) {};
+    };
+
+    private static void loadSlimCache() {
+        if (!SLIM_FILE.exists()) return;
+        try (FileReader reader = new FileReader(SLIM_FILE)) {
+            JsonObject json = JsonParser.parseReader(reader).getAsJsonObject();
+            for (Map.Entry<String, JsonElement> entry : json.entrySet()) {
+                SKIN_SLIM.put(entry.getKey(), entry.getValue().getAsBoolean());
+            };
+        } catch (Exception ignored) {};
+    };
+
+    private static void saveSlimCache() {
+        try {
+            File parent = SLIM_FILE.getParentFile();
+            if (parent != null && !parent.exists()) parent.mkdirs();
+            try (FileWriter writer = new FileWriter(SLIM_FILE)) {
+                JsonObject json = new JsonObject();
+                for (Map.Entry<String, Boolean> entry : SKIN_SLIM.entrySet()) {
+                    json.addProperty(entry.getKey(), entry.getValue());
+                };
+                writer.write(json.toString());
+            }
         } catch (Exception ignored) {};
     };
 

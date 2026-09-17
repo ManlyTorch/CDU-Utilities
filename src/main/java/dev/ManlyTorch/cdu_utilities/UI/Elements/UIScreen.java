@@ -38,14 +38,22 @@ public class UIScreen extends Screen {
     };
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        if (button != 0) return super.mouseClicked(mouseX, mouseY, button);
-        if (checkHovered(rootFrame, mouseX, mouseY)) return true;
+        if (button == 0 && checkClicked(rootFrame, mouseX, mouseY)) return true;
+        else if (button == 1 && checkRightClicked(rootFrame, mouseX, mouseY)) return true;
         return super.mouseClicked(mouseX, mouseY, button);
     };
 
-    private boolean checkHovered(Frame frame, double mouseX, double mouseY) {
+    private boolean checkRightClicked(Frame frame, double mouseX, double mouseY) {
         for (int i = frame.renderOrder.size() - 1; i >= 0; i--) {
-            if (checkHovered(frame.renderOrder.get(i), mouseX, mouseY)) return true;
+            if (checkRightClicked(frame.renderOrder.get(i), mouseX, mouseY)) return true;
+        };
+        if (frame.isHovering(mouseX, mouseY)) { frame.rightClicked = true; return true; }
+        return false;
+    };
+
+    private boolean checkClicked(Frame frame, double mouseX, double mouseY) {
+        for (int i = frame.renderOrder.size() - 1; i >= 0; i--) {
+            if (checkClicked(frame.renderOrder.get(i), mouseX, mouseY)) return true;
         };
         if (frame.isHovering(mouseX, mouseY)) { frame.clicked = true; return true; }
         return false;

@@ -9,8 +9,6 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 
 import java.util.List;
-import java.util.ArrayList;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static com.mojang.brigadier.arguments.StringArgumentType.getString;

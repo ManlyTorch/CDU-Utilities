@@ -23,6 +23,7 @@ public class Frame {
     protected Frame parent;
     public UIScreen screen;
     public boolean clicked = false;
+    public boolean rightClicked = false;
     public boolean automaticSize = false;
     public Vector2 absolutePosition = new Vector2();
     public Vector2 absoluteSize = new Vector2();
