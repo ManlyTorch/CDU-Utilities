@@ -7,7 +7,6 @@ import dev.ManlyTorch.cdu_utilities.UI.Types.Vector2;
 import com.mojang.authlib.GameProfile;
 import com.mojang.authlib.properties.Property;
 import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.platform.Lighting;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
@@ -19,6 +18,7 @@ import net.minecraft.world.entity.player.PlayerModelPart;
 import net.minecraft.client.renderer.entity.EntityRenderDispatcher;
 
 import org.joml.Quaternionf;
+import org.joml.Vector3f;
 import org.lwjgl.glfw.GLFW;
 
 import java.util.Base64;
@@ -103,18 +103,19 @@ public class SkinDisplay extends Frame {
             (int) (absolutePosition.x + absoluteSize.x), (int) (absolutePosition.y + absoluteSize.y)
         );
 
+        Vector3f light0 = new Vector3f(0.0f, 0.0f, 1.0f);
+        Vector3f light1 = new Vector3f(0.0f, 0.0f, 1.0f);
+        RenderSystem.setShaderLights(light0, light1);
         Quaternionf baseFacing = new Quaternionf().rotateY((float) Math.PI);
         Quaternionf userRotation = new Quaternionf().rotateX((float) Math.toRadians(-rotationX)).rotateY((float) Math.toRadians(-rotationY));
         gg.pose().pushPose(); gg.pose().translate(x, y, 50.0); gg.pose().scale(scale, -scale, scale);
         gg.pose().translate(0, PIVOT_HEIGHT, 0); gg.pose().mulPose(baseFacing); gg.pose().mulPose(userRotation); gg.pose().translate(0, -PIVOT_HEIGHT, 0);
-        Lighting.setupForEntityInInventory();
         EntityRenderDispatcher dispatcher = Minecraft.getInstance().getEntityRenderDispatcher();
         boolean shouldRenderHitboxes = dispatcher.shouldRenderHitBoxes();
-        dispatcher.setRenderShadow(false); dispatcher.setRenderHitBoxes(false);
-        RenderSystem.runAsFancy(() -> dispatcher.render(fakePlyr, 0.0, 0.0, 0.0, 0.0f, 1.0f, gg.pose(), gg.bufferSource(), LightTexture.FULL_BRIGHT));
+        dispatcher.setRenderHitBoxes(false);
+        dispatcher.render(fakePlyr, 0.0, 0.0, 0.0, 0.0f, 1.0f, gg.pose(), gg.bufferSource(), LightTexture.FULL_BRIGHT);
         gg.flush(); gg.pose().popPose();
-        dispatcher.setRenderShadow(true); dispatcher.setRenderHitBoxes(shouldRenderHitboxes);
-        Lighting.setupFor3DItems();
+        dispatcher.setRenderHitBoxes(shouldRenderHitboxes);
 
         gg.disableScissor();
     }
