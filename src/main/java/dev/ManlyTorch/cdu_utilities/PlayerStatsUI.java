@@ -131,7 +131,7 @@ public class PlayerStatsUI {
     public static void buildUser() {
         playerDisplay = new SkinDisplay()
             .setPosition(UDim2.fromOffset(PADDING, blockTop))
-            .setSize(new UDim2(0.4, -PADDING*2 - 4, .65))
+            .setSize(new UDim2(0.4, -PADDING*2 - 4, 0, statRows.size() * ROW_HEIGHT - PADDING))
             .setBackgroundColor(BLANK)
             .setParent(root);
 
