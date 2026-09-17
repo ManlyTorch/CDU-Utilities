@@ -109,9 +109,11 @@ public class SkinDisplay extends Frame {
         gg.pose().translate(0, PIVOT_HEIGHT, 0); gg.pose().mulPose(baseFacing); gg.pose().mulPose(userRotation); gg.pose().translate(0, -PIVOT_HEIGHT, 0);
         Lighting.setupForEntityInInventory();
         EntityRenderDispatcher dispatcher = Minecraft.getInstance().getEntityRenderDispatcher();
-        dispatcher.setRenderShadow(false);
+        boolean shouldRenderHitboxes = dispatcher.shouldRenderHitBoxes();
+        dispatcher.setRenderShadow(false); dispatcher.setRenderHitBoxes(false);
         RenderSystem.runAsFancy(() -> dispatcher.render(fakePlyr, 0.0, 0.0, 0.0, 0.0f, 1.0f, gg.pose(), gg.bufferSource(), LightTexture.FULL_BRIGHT));
-        gg.flush(); dispatcher.setRenderShadow(true); gg.pose().popPose();
+        gg.flush(); gg.pose().popPose();
+        dispatcher.setRenderShadow(true); dispatcher.setRenderHitBoxes(shouldRenderHitboxes);
         Lighting.setupFor3DItems();
 
         gg.disableScissor();
