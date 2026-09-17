@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.List;
+import java.util.UUID;
 import java.util.Map;
 
 public class PlayerStatsUI {
@@ -31,7 +32,6 @@ public class PlayerStatsUI {
     private static final int BLANK = 0x00000000;
     private static final int PADDING = 12;
     private static final int AWARD_GAP = 6;
-    private static final int HEAD_SIZE = 64;
     private static final int ROW_HEIGHT = 14;
     private static final int AWARD_SIZE = 28;
     private static final int AWARDS_PER_ROW = 10;
@@ -41,7 +41,7 @@ public class PlayerStatsUI {
     public static Long discordId;
     public static boolean discordLinked;
     public static Frame root;
-    public static ImageLabel playerImage;
+    public static SkinDisplay playerDisplay;
     public static TextButton closeButton;
     public static TextButton discordLabel;
     public static TextLabel lastSeenLabel;
@@ -129,12 +129,9 @@ public class PlayerStatsUI {
     }
     
     public static void buildUser() {
-        playerImage = new ImageLabel()
-            .setTCache("skins")
-            .addBlitOption(new BlitOptions(8f, 8f, 8, 8, 64, 64))
-            .addBlitOption(new BlitOptions(40f, 8f, 8, 8, 64, 64))
+        playerDisplay = new SkinDisplay()
             .setPosition(UDim2.fromOffset(PADDING, blockTop))
-            .setSize(UDim2.fromOffset(HEAD_SIZE, HEAD_SIZE))
+            .setSize(new UDim2(0.4, -PADDING*2 - 4, .65))
             .setBackgroundColor(BLANK)
             .setParent(root);
 
@@ -146,7 +143,7 @@ public class PlayerStatsUI {
             .setAutomaticSize(true)
             .setBackgroundColor(BLANK)
             .setBorderColor(BLANK)
-            .setParent(playerImage);
+            .setParent(playerDisplay);
 
         discordLabel = new TextButton()
             .setText(Component.literal("Discord Not Linked"))
@@ -195,11 +192,10 @@ public class PlayerStatsUI {
     }
 
     public static void buildStatRows() {
-        int statsX = PADDING + HEAD_SIZE + PADDING * 2;
         int row = 0;
-        UDim2 statSize = new UDim2(1, -statsX - PADDING, 0, ROW_HEIGHT);
+        UDim2 statSize = new UDim2(.6, -PADDING, 0, ROW_HEIGHT);
         for (StatRow statRow : statRows) {
-            UDim2 rowPos = UDim2.fromOffset(statsX, blockTop + row * ROW_HEIGHT);
+            UDim2 rowPos = new UDim2(.4, 0, 0, blockTop + row * ROW_HEIGHT);
             TextLabel statLabel = new TextLabel()
                 .setText(Component.literal(statRow.idx()))
                 .setTextColor(COLOR_TEXT_MUTED)
@@ -240,20 +236,20 @@ public class PlayerStatsUI {
                 JsonArray awards = playerStats[0].getAsJsonArray("player_awards");
                 List<Thread> threads = new ArrayList<>();
                 for (JsonElement element : awards) {
-                    JsonObject award = element.getAsJsonObject();
-                    String imgUrl = award.get("img_url").getAsString();
-                    Thread t = runThread(() -> ImageCacher.fetchImage("awards", imgUrl));
-                    threads.add(t);
+                   JsonObject award = element.getAsJsonObject();
+                   String imgUrl = award.get("img_url").getAsString();
+                   Thread t = runThread(() -> ImageCacher.fetchImage("awards", imgUrl));
+                   threads.add(t);
                 }
                 for (Thread t : threads) {
-                    try { t.join(); }
-                    catch (InterruptedException e) { Thread.currentThread().interrupt(); return; }
+                   try { t.join(); }
+                   catch (InterruptedException e) { Thread.currentThread().interrupt(); return; }
                 }
             });
             try { skinThread.join(); cduThread.join(); }
             catch (InterruptedException e) { Thread.currentThread().interrupt(); return; }
-            if (skinURL[0] == null || playerStats[0] == null) return;
-            updateUI(playerStats[0], skinURL[0]);
+            if (skinURL[0] == null ) return;
+            updateUI(playerStats[0], username, MojangService.UUIDFromString(uuid), skinURL[0]);
             mc.execute(() -> mc.setScreen(screen));
         });
         mainThread.start();
@@ -266,7 +262,7 @@ public class PlayerStatsUI {
     };
     public static Thread runThread(Runnable callback) { Thread t = createThread(callback); t.start(); return t; }
 
-    private static void updateUI(JsonObject playerStats, String skin_url) {
+    private static void updateUI(JsonObject playerStats, String username, UUID uuid, String skin_url) {
         // misc
         usernameLabel.setText(Component.literal(playerStats.get("username").getAsString()));
         lastSeenLabel.setText(Component.literal(playerStats.get("lastjoinedservername").getAsString()));
@@ -278,7 +274,10 @@ public class PlayerStatsUI {
         discordLabel.setText(Component.literal(discordLinked ? "Discord Linked" : "Discord Not Linked")
             .withStyle(style -> style.withUnderlined(discordLinked)));
         
-        playerImage.imgURL = skin_url;
+        playerDisplay.username = playerStats.get("username").getAsString();
+        playerDisplay.setSkinURL(skin_url)
+            .setUsername(username)
+            .setUUID(uuid);
 
         // stats
         for (StatRow statRow : statRows) {

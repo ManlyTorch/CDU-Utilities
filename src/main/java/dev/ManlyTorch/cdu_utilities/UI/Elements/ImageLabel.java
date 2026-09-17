@@ -2,9 +2,10 @@ package dev.ManlyTorch.cdu_utilities.UI.Elements;
 
 import dev.ManlyTorch.cdu_utilities.Lib.*;
 import dev.ManlyTorch.cdu_utilities.UI.Types.*;
-import net.minecraft.client.gui.GuiGraphics;
 
 import com.mojang.blaze3d.systems.RenderSystem;
+
+import net.minecraft.client.gui.GuiGraphics;
 
 import java.util.List;
 import java.util.ArrayList;

@@ -8,7 +8,6 @@ import com.mojang.authlib.GameProfile;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
-import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.multiplayer.PlayerInfo;
 import net.minecraft.network.chat.MutableComponent;
 
@@ -43,12 +42,8 @@ public final class MojangService {
 
     private static String fetchSkinURL(String strUUID, String username) {
         try {
-            UUID uuid = UUID.fromString(strUUID.replaceFirst(
-                "(\\w{8})(\\w{4})(\\w{4})(\\w{4})(\\w{12})",
-                "$1-$2-$3-$4-$5"
-            ));
             Minecraft mc = Minecraft.getInstance();
-            GameProfile profile = new GameProfile(uuid, username);
+            GameProfile profile = new GameProfile(UUIDFromString(strUUID), username);
             profile = mc.getMinecraftSessionService().fillProfileProperties(profile, false);
             Map<?, ?> textures = mc.getMinecraftSessionService().getTextures(profile, false);
             Object skin = textures.values().stream().findFirst().orElse(null);
@@ -57,6 +52,10 @@ public final class MojangService {
         } catch (Exception ignored) {
             return null;
         }
+    }
+
+    public static UUID UUIDFromString(String strUUID) {
+        return UUID.fromString(strUUID.replaceFirst( "(\\w{8})(\\w{4})(\\w{4})(\\w{4})(\\w{12})", "$1-$2-$3-$4-$5"));
     }
 
     public static String getUUIDfromName(String username) {
