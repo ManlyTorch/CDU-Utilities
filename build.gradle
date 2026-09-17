@@ -29,7 +29,7 @@ dependencies {
 
 jar.manifest.attributes([
     'Specification-Title'   : 'CDU-Utilities',
-    'Specification-Version' : '1',
+    'Specification-Version' : '1.1.2',
     'Implementation-Title'  : project.name,
     'Implementation-Version': project.jar.archiveVersion
 ])

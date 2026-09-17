@@ -18,6 +18,6 @@ license="GPL-3.0"
 
 [[mods]]
     modId="cduutils"
-    version="1.1"
+    version="1.1.2"
     displayName="CDU-Utilities"
     description="Utility mod of CDU."
