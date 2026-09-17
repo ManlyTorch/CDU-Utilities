@@ -57,11 +57,12 @@ public class SkinDisplay extends Frame {
         return profile;
     }
 
-    private void createFakePlayer() {
+    public SkinDisplay createFakePlayer() {
         ClientLevel level = Minecraft.getInstance().level;
-        if (level == null) return;
+        if (level == null) return this;
         fakePlyr = new FakeSkinPlayer(level, buildProfile(), ImageCacher.fetchImage("skins", skinURL).location());
         fakePlyr.setPos(0, -5000, 0);
+        return this;
     }
 
     private void handleDrag(int mouseX, int mouseY) {
@@ -123,9 +124,9 @@ public class SkinDisplay extends Frame {
         gg.disableScissor();
     }
 
-    public SkinDisplay setUUID(UUID uuid) { this.uuid = uuid; createFakePlayer(); return this; }
-    public SkinDisplay setSkinURL(String imgURL) { this.skinURL = imgURL; createFakePlayer(); return this; }
-    public SkinDisplay setUsername(String username) { this.username = username; createFakePlayer(); return this; }
+    public SkinDisplay setUUID(UUID uuid) { this.uuid = uuid; return this; }
+    public SkinDisplay setSkinURL(String imgURL) { this.skinURL = imgURL; return this; }
+    public SkinDisplay setUsername(String username) { this.username = username; return this; }
     public SkinDisplay setParent(Frame parent) { super.setParent(parent); return this; }
     public SkinDisplay setAnchorPoint(Vector2 v2) { this.anchorPoint = v2; return this; }
     public SkinDisplay setMinSize(Vector2 v2) { this.minSize = v2; return this; }

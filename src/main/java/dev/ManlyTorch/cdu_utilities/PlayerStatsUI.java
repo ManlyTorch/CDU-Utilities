@@ -299,42 +299,37 @@ public class PlayerStatsUI {
         Minecraft mc = Minecraft.getInstance();
         Component userComp = Component.literal(username).withStyle(ChatFormatting.WHITE);
         mc.player.displayClientMessage(fetching.copy().append(userComp), true);
-        Thread mainThread;
-        mainThread = createThread(() -> {
+        runThread(() -> {
             String uuid = MojangService.getUUIDfromName(username.toLowerCase());
             if (uuid == null) return;
             String[] skinURL = new String[1];
             JsonObject[] playerStats = new JsonObject[1];
-            Thread skinThread = runThread(() -> { skinURL[0] = MojangService.getSkin(uuid, username); });
-            Thread cduThread = runThread(() -> {
-                // preload leaderboard
-                List<Thread> threads = new ArrayList<>();
-                for (String statCategory : lbStats.values()) {
-                    Thread t = runThread(() -> CDUService.getLeaderboard(statCategory));
-                    threads.add(t);
-                }
-                // fetch playerstats
+            List<Thread> threads = new ArrayList<>();
+            // SKIN
+            threads.add(runThread(() -> skinURL[0] = MojangService.getSkin(uuid, username)));
+            threads.add(runThread(() -> MojangService.isSlim(uuid.toString())));
+            // CDU
+            for (String statCategory : lbStats.values()) { threads.add(runThread(() -> CDUService.getLeaderboard(statCategory))); }
+            threads.add(runThread(() -> {
                 playerStats[0] = CDUService.getPlayerData(uuid, username);
-                // load award icons
-                JsonArray awards = playerStats[0].getAsJsonArray("player_awards");
-                for (JsonElement element : awards) {
-                   JsonObject award = element.getAsJsonObject();
-                   String imgUrl = award.get("img_url").getAsString();
-                   Thread t = runThread(() -> ImageCacher.fetchImage("awards", imgUrl));
-                   threads.add(t);
+                List<Thread> awardThreads = new ArrayList<>();
+                for (JsonElement element : playerStats[0].getAsJsonArray("player_awards")) {
+                   String imgUrl = element.getAsJsonObject().get("img_url").getAsString();
+                   awardThreads.add(runThread(() -> ImageCacher.fetchImage("awards", imgUrl)));
                 }
-                for (Thread t : threads) {
+                for (Thread t : awardThreads) {
                    try { t.join(); }
                    catch (InterruptedException e) { Thread.currentThread().interrupt(); return; }
                 }
-            });
-            try { skinThread.join(); cduThread.join(); }
-            catch (InterruptedException e) { Thread.currentThread().interrupt(); return; }
+            }));
+            for (Thread t : threads) {
+               try { t.join(); }
+               catch (InterruptedException e) { Thread.currentThread().interrupt(); return; }
+            }
             if (skinURL[0] == null ) return;
-            updateUI(playerStats[0], playerStats[0].get("username").getAsString(), MojangService.UUIDFromString(uuid), skinURL[0]);
+            runThread(() -> updateUI(playerStats[0], playerStats[0].get("username").getAsString(), MojangService.UUIDFromString(uuid), skinURL[0]));
             mc.execute(() -> mc.setScreen(screen));
         });
-        mainThread.start();
     };
 
     public static Thread createThread(Runnable callback) {
@@ -357,17 +352,17 @@ public class PlayerStatsUI {
         lastSeenLabel.setText(Component.literal(" " + playerStats.get("lastjoinedservername").getAsString()));
         lastSeenDate.setText(formatted);
 
-        discordId = playerStats.get("discordid").getAsLong();
+        discordId = playerStats.get("discordid").isJsonNull() ? null : playerStats.get("discordid").getAsLong();
         discordLinked = discordId != null;
         int discordColor = discordLinked ? DISCORD_LINKED_COLOR : COLOR_TEXT_MUTED;
         discordLabel.setTextColor(discordColor);
         discordLabel.setText(Component.literal(discordLinked ? "Discord Linked" : "Discord Not Linked")
             .withStyle(style -> style.withUnderlined(discordLinked)));
         
-        playerDisplay.username = username;
         playerDisplay.setSkinURL(skin_url)
             .setUsername(username)
-            .setUUID(uuid);
+            .setUUID(uuid)
+            .createFakePlayer();
 
         // stats
         for (StatRow statRow : statRows) {
@@ -394,7 +389,7 @@ public class PlayerStatsUI {
             if (!element.isJsonObject()) continue;
             JsonObject award = element.getAsJsonObject();
             String awardName = award.get("award_name").getAsString();
-            if (nonDuplicateAwards.contains(awardName)) continue;
+            if (awardName.equals("None") || nonDuplicateAwards.contains(awardName)) continue;
             nonDuplicateAwards.add(awardName);
             ImageLabel awardDisplay = awardLabels.get(awardName);
             if (awardDisplay == null) {
