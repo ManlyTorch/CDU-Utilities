@@ -12,7 +12,7 @@ import java.util.ArrayList;
 
 public class ImageLabel extends Frame {
     public String imgURL;
-    public String tCache;
+    public String tCache = "NULL";
     public ImageCacher.LoadedTexture backupImg;
     public List<BlitOptions> blits = new ArrayList<>();
 

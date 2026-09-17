@@ -19,11 +19,6 @@ import java.util.concurrent.*;
 public final class ImageCacher {
     public record LoadedTexture(ResourceLocation location, int width, int height) {};
     private enum State { LOADING, READY, FAILED };
-    private static final ExecutorService DOWNLOAD_POOL = Executors.newFixedThreadPool(4, r -> {
-        Thread t = new Thread(r, "stats-badge-downloader");
-        t.setDaemon(true);
-        return t;
-    });
     private static final Gson GSON = new Gson();
     private static final Map<String, State> STATE = new ConcurrentHashMap<>();
     private static final Map<String, LoadedTexture> TEXTURES = new ConcurrentHashMap<>();
@@ -55,6 +50,8 @@ public final class ImageCacher {
         return TEXTURES.get(imgUrl);
     };
 
+    public static void putTexture(String imgUrl, LoadedTexture texture) { STATE.put(imgUrl, State.READY); TEXTURES.put(imgUrl, texture); }
+
     private static NativeImage loadCached(String targetCache, String imgUrl) {
         try {
             Map<String, String> TARGET_CACHE = CACHE_INDEX.get(targetCache);
@@ -65,7 +62,7 @@ public final class ImageCacher {
             Path path = TCACHE_DIR.resolve(file);
             if (!Files.exists(path)) return null;
             try (InputStream in = Files.newInputStream(path)) {return NativeImage.read(in);}
-        } catch (Exception ignored) {return null;}
+        } catch (Exception e) { e.printStackTrace(); return null; }
     };
 
     private static void saveCached(@Nullable String targetCache, String imgUrl, NativeImage image) {

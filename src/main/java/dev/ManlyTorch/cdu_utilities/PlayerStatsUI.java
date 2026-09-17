@@ -1,10 +1,10 @@
 package dev.ManlyTorch.cdu_utilities;
 
 import dev.ManlyTorch.cdu_utilities.Lib.*;
+import dev.ManlyTorch.cdu_utilities.Lib.ImageCacher.LoadedTexture;
 import dev.ManlyTorch.cdu_utilities.UI.Elements.*;
 import dev.ManlyTorch.cdu_utilities.UI.Types.*;
 import dev.ManlyTorch.cdu_utilities.UI.Enums.*;
-import dev.ManlyTorch.cdu_utilities.UI.Elements.ImageLabel.BlitOptions;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
@@ -14,6 +14,7 @@ import net.minecraft.client.gui.screens.ChatScreen;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 
@@ -41,6 +42,7 @@ public class PlayerStatsUI {
     private static final int AWARDS_PER_ROW = 10;
     private static final int STATS_WIDTH = 360;
     private static final int COPIED_COOLDOWN = 5;
+    private static final int BOOSTER_SIZE = 14;
 
     private static final int AWARD_GAPSIZE = AWARD_GAP + AWARD_SIZE;
     private static final int blockTop = PADDING + 16 + 8;
@@ -61,6 +63,7 @@ public class PlayerStatsUI {
     public static TextLabel lastSeenLabel;
     public static TextLabel usernameLabel;
     public static SkinDisplay playerDisplay;
+    public static ImageLabel serverBoosterImage;
 
     public static Map<String, ImageLabel> awardLabels = new HashMap<>();
     public static Map<String, StatLabels> statLabels = new HashMap<>();
@@ -178,6 +181,15 @@ public class PlayerStatsUI {
             .setBorderColor(BLANK)
             .setParent(playerDisplay);
 
+        serverBoosterImage = new ImageLabel()
+            .setImgURL("boosterIcon")
+            .setPosition(new UDim2(1, 4, .5))
+            .setAnchorPoint(new Vector2(0, .5))
+            .setSize(UDim2.fromOffset(BOOSTER_SIZE, BOOSTER_SIZE))
+            .setBackgroundColor(BLANK)
+            .setBorderColor(BLANK);
+        ImageCacher.putTexture("boosterIcon", new LoadedTexture(ResourceLocation.fromNamespaceAndPath("ui", "booster.png"), 250, 250));
+
         discordLabel = new TextButton()
             .setText(Component.literal("Discord Not Linked"))
             .setTextColor(COLOR_TEXT_MUTED)
@@ -189,7 +201,7 @@ public class PlayerStatsUI {
             .setHoverColor(BLANK)
             .setParent(usernameLabel);
         List<Long> decayTime = new ArrayList<>();
-        decayTime.add(System.currentTimeMillis());
+        decayTime.add(0L);
         discordLabel.MouseHovered.onEvent(renderParams -> {
             if (discordLinked == false) return;
             float curTime = System.currentTimeMillis();
@@ -305,6 +317,7 @@ public class PlayerStatsUI {
         // misc
         usernameLabel.setText(Component.literal(username));
         usernameLabel.rainbowText = rainbowUUIDs.contains(uuid.toString());
+        serverBoosterImage.setParent(playerStats.get("isserverbooster").getAsBoolean() ? usernameLabel : null);
         lastSeenLabel.setText(Component.literal(" " + playerStats.get("lastjoinedservername").getAsString()));
         lastSeenDate.setText(formatted);
 
