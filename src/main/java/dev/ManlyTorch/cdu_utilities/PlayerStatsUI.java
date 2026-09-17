@@ -17,12 +17,16 @@ import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.Instant;
+import java.time.ZoneId;
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Locale;
 import java.util.List;
-import java.util.UUID;
+import java.util.HashMap;
 import java.util.Map;
+import java.util.Locale;
+import java.util.UUID;
 
 public class PlayerStatsUI {
     private static final int DISCORD_LINKED_COLOR = 0xff57f287;
@@ -37,15 +41,27 @@ public class PlayerStatsUI {
     private static final int AWARDS_PER_ROW = 10;
     private static final int STATS_WIDTH = 360;
     private static final int COPIED_COOLDOWN = 5;
-    private static Screen returnScreen;
+
+    private static final int AWARD_GAPSIZE = AWARD_GAP + AWARD_SIZE;
+    private static final int blockTop = PADDING + 16 + 8;
+    private static final int blockBottom = blockTop + 16 * ROW_HEIGHT;
+    private static final int awardsY = blockBottom + 10;
+
+    private static final ZoneId timezone = ZoneId.systemDefault();
+
     public static Long discordId;
     public static boolean discordLinked;
     public static Frame root;
-    public static SkinDisplay playerDisplay;
+
+    private static UIScreen screen = new UIScreen("CDUStatsDisplay");
+    private static Screen returnScreen;
     public static TextButton closeButton;
+    public static TextLabel lastSeenDate;
     public static TextButton discordLabel;
     public static TextLabel lastSeenLabel;
     public static TextLabel usernameLabel;
+    public static SkinDisplay playerDisplay;
+
     public static Map<String, ImageLabel> awardLabels = new HashMap<>();
     public static Map<String, StatLabels> statLabels = new HashMap<>();
     public static List<StatRow> statRows = List.of(
@@ -66,26 +82,26 @@ public class PlayerStatsUI {
         new StatRow("Swum", "mc_distanceswum"),
         new StatRow("Walked", "mc_distancewalked")
     );
-    public record StatRow(String idx, String val) {}
-    public record StatLabels(TextLabel nameLabel, TextLabel valueLabel) {};
-    public static final MutableComponent fetching = Component.literal("Fetching stats for ").withStyle(ChatFormatting.GRAY);
     public static final List<String> rainbowUUIDs = List.of(
-        "4772296d-7c7e-4744-9a78-953d76dd8ac0", // ManlyTorch Creator
-        "ac09fc69-61d0-4a36-bf33-e9f8e8f98cae", // DerpDude f
-        "59edeebc4bd244e2bb14c8cc1d131530", // MEE5 f
-        "1418475b-1029-4a9a-af78-fbf5d59dfee0", // Sauramel CDU owner
-        "39bddbb3-e4ca-4be1-9b37-7ec36082817b" // OliviaJumba CDU owner
+        "4772296d-7c7e-4744-9a78-953d76dd8ac0",
+        "ac09fc69-61d0-4a36-bf33-e9f8e8f98cae",
+        "59edeebc4bd244e2bb14c8cc1d131530",
+        "1418475b-1029-4a9a-af78-fbf5d59dfee0",
+        "39bddbb3-e4ca-4be1-9b37-7ec36082817b"
+    );
+    public static final Map<Integer, String> daySuffixs = Map.of(
+        1, "st",
+        2, "nd",
+        3, "rd"
     );
 
-    private static UIScreen screen = new UIScreen("CDUStatsDisplay");
+    public record StatRow(String idx, String val) {}
+    public record StatLabels(TextLabel nameLabel, TextLabel valueLabel) {};
+
+    public static final MutableComponent fetching = Component.literal("Fetching stats for ").withStyle(ChatFormatting.GRAY);
 
     private PlayerStatsUI() { buildRoot(); }
     public static PlayerStatsUI getInstance() { return classObj; }
-
-    private static final int AWARD_GAPSIZE = AWARD_GAP + AWARD_SIZE;
-    private static final int blockTop = PADDING + 16 + 8;
-    private static final int blockBottom = blockTop + 16 * ROW_HEIGHT;
-    private static final int awardsY = blockBottom + 10;
 
     public static void buildRoot() {
         root = new Frame()
@@ -104,23 +120,33 @@ public class PlayerStatsUI {
         closeButton.MouseButton1Clicked.onEvent(data -> close());
 
         @SuppressWarnings("unused")
-        TextLabel lastSeenDisplay = new TextLabel()
-            .setText(Component.literal("Last seen"))
+        TextLabel lastSeenTxtLabel = new TextLabel()
+            .setText(Component.literal("Last seen on:"))
             .setTextColor(COLOR_TEXT_MUTED)
             .setTextXAlignment(TextAlignment.LEFT)
             .setPosition(UDim2.fromOffset(PADDING, PADDING))
-            .setSize(new UDim2(0.25, 0, 0, 16))
+            .setAutomaticSize(true)
             .setBackgroundColor(BLANK)
             .setBorderColor(BLANK)
             .setParent(root);
         
         lastSeenLabel = new TextLabel()
-            .setTextXAlignment(TextAlignment.RIGHT)
-            .setPosition(UDim2.fromOffset(PADDING, PADDING))
-            .setSize(new UDim2(1, -PADDING - closeSize - 10, 0, 16))
+            .setTextXAlignment(TextAlignment.LEFT)
+            .setPosition(UDim2.fromScale(1, .5))
+            .setAnchorPoint(new Vector2(0, .5))
+            .setAutomaticSize(true)
             .setBackgroundColor(BLANK)
             .setBorderColor(BLANK)
-            .setParent(root);
+            .setParent(lastSeenTxtLabel);
+        
+        lastSeenDate = new TextLabel()
+            .setTextXAlignment(TextAlignment.LEFT)
+            .setPosition(UDim2.fromScale(1, .5))
+            .setAnchorPoint(new Vector2(0, .5))
+            .setAutomaticSize(true)
+            .setBackgroundColor(BLANK)
+            .setBorderColor(BLANK)
+            .setParent(lastSeenLabel);
 
         @SuppressWarnings("unused")
         Frame topDivider = new Frame()
@@ -270,10 +296,18 @@ public class PlayerStatsUI {
     public static Thread runThread(Runnable callback) { Thread t = createThread(callback); t.start(); return t; }
 
     private static void updateUI(JsonObject playerStats, String username, UUID uuid, String skin_url) {
+        // time
+        Instant utcInstant = Instant.parse("2026-09-17T03:09:53.000Z");
+        ZonedDateTime localTime = utcInstant.atZone(timezone);
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern(" 'on' dd/MM/yyyy", Locale.ENGLISH);
+        Component formatted = Component.literal(localTime.format(formatter));
+
         // misc
         usernameLabel.setText(Component.literal(username));
         usernameLabel.rainbowText = rainbowUUIDs.contains(uuid.toString());
-        lastSeenLabel.setText(Component.literal(playerStats.get("lastjoinedservername").getAsString()));
+        lastSeenLabel.setText(Component.literal(" " + playerStats.get("lastjoinedservername").getAsString()));
+        lastSeenDate.setText(formatted);
+
 
         discordId = playerStats.get("discordid").getAsLong();
         discordLinked = discordId != null;
