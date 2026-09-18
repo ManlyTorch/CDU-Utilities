@@ -40,6 +40,10 @@ public final class ImageCacher {
         NativeImage image = loadCached(targetCache, imgUrl);
         if (image == null) image = HTTPService.getImage(imgUrl);
         if (image == null) {STATE.put(imgUrl, State.FAILED); return null;}
+        if (tCache == "skins") {
+            NativeImage normalized = convertLegacySkinIfNeeded(image);
+            if (normalized != image) { image.close(); image = normalized; }
+        }
         saveCached(targetCache, imgUrl, image);
         NativeImage finalImage = image;
         DynamicTexture texture = new DynamicTexture(finalImage);
@@ -49,6 +53,24 @@ public final class ImageCacher {
         STATE.put(imgUrl, State.READY);
         return TEXTURES.get(imgUrl);
     };
+    
+    private static NativeImage convertLegacySkinIfNeeded(NativeImage src) {
+        if (src.getHeight() >= 64) return src;
+        NativeImage dst = new NativeImage(NativeImage.Format.RGBA, 64, 64, true);
+        dst.fillRect(0, 0, 64, 64, 0);
+        for (int x = 0; x < 64; x++) { for (int y = 0; y < 32; y++) { dst.setPixelRGBA(x, y, src.getPixelRGBA(x, y)); } }
+        copyMirroredX(src, dst, 0, 16, 16, 48, 16, 16); copyMirroredX(src, dst, 40, 16, 32, 48, 16, 16);
+        return dst;
+    }
+
+    private static void copyMirroredX(NativeImage src, NativeImage dst, int srcX, int srcY, int dstX, int dstY, int w, int h) {
+        for (int x = 0; x < w; x++) {
+            for (int y = 0; y < h; y++) {
+                int color = src.getPixelRGBA(srcX + x, srcY + y);
+                dst.setPixelRGBA(dstX + (w - 1 - x), dstY + y, color);
+            }
+        }
+    }
 
     public static void putTexture(String imgUrl, LoadedTexture texture) { STATE.put(imgUrl, State.READY); TEXTURES.put(imgUrl, texture); }
 
