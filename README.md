@@ -1,4 +1,4 @@
 # NOT AFFILIATED WITH CDU IN ANY OFFICIAL CAPACITY
 
 Currently there is just /stats \<PlayerName\> command.
-<img width="751" height="685" alt="image" src="https://github.com/user-attachments/assets/2bbce524-83d6-4d5f-a5db-1576816b96c0" />
+<img width="743" height="752" alt="image" src="https://github.com/user-attachments/assets/ef91c950-76a4-48bf-87ee-658763fe62f7" />
