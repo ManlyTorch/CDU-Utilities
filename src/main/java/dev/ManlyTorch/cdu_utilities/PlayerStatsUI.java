@@ -327,7 +327,7 @@ public class PlayerStatsUI {
                catch (InterruptedException e) { Thread.currentThread().interrupt(); return; }
             }
             if (skinURL[0] == null ) return;
-            runThread(() -> updateUI(playerStats[0], playerStats[0].get("username").getAsString(), MojangService.UUIDFromString(uuid), skinURL[0]));
+            updateUI(playerStats[0], playerStats[0].get("username").getAsString(), MojangService.UUIDFromString(uuid), skinURL[0]);
             mc.execute(() -> mc.setScreen(screen));
         });
     };
