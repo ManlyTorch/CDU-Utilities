@@ -17,9 +17,8 @@ java {
 }
 
 processResources {
-    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
     inputs.property 'mod_version', mod_version
-    filesMatching('META-INF/mods.toml') {
+    filesMatching(['META-INF/mods.toml', 'META-INF/neoforge.mods.toml']) {
         expand 'mod_version': mod_version
     }
 }

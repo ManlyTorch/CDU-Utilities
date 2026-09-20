@@ -16,6 +16,13 @@ java {
     }
 }
 
+processResources {
+    inputs.property 'version', version
+    filesMatching('fabric.mod.json') {
+        expand 'version': version
+    }
+}
+
 sourceSets {
     main {
         java { srcDir project(':common').file('src/main/java') }
