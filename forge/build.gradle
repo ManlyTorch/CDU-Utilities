@@ -1,0 +1,45 @@
+plugins {
+    id 'net.minecraftforge.gradle' version '[6.0.24,6.2)'
+    id 'java'
+}
+
+version = "${mod_version}"
+group = 'dev.ManlyTorch.cdu_utilities'
+
+base {
+    archivesName = "CDU-Utilities_forge"
+}
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(17)
+    }
+}
+
+processResources {
+    inputs.property 'mod_version', mod_version
+    filesMatching('META-INF/mods.toml') {
+        expand 'mod_version': mod_version
+    }
+}
+
+sourceSets {
+    main {
+        java { srcDir project(':common').file('src/main/java') }
+        resources { srcDir project(':common').file('src/main/resources') }
+    }
+}
+
+minecraft {
+    mappings channel: 'official', version: "${minecraft_version}"
+    runs {
+        client {
+            workingDirectory project.file('run')
+            mods { cduutils { source sourceSets.main } }
+        }
+    }
+}
+
+dependencies {
+    minecraft "net.minecraftforge:forge:${minecraft_version}-${forge_version}"
+}

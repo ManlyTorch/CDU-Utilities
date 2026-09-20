@@ -1,0 +1,23 @@
+modLoader="javafml"
+loaderVersion="[1,)"
+license="GPL-3.0"
+
+[[dependencies.cduutils]]
+    modId="neoforge"
+    mandatory=true
+    versionRange="[20.2,)"
+    ordering="NONE"
+    side="CLIENT"
+
+[[dependencies.cduutils]]
+    modId="minecraft"
+    mandatory=true
+    versionRange="[1.20.2,1.21)"
+    ordering="NONE"
+    side="CLIENT"
+
+[[mods]]
+    modId="cduutils"
+    version="${mod_version}"
+    displayName="CDU-Utilities"
+    description="Utility mod of CDU."

@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "id": "cduutils",
+  "version": "${version}",
+  "name": "CDU-Utilities",
+  "description": "Utility mod of CDU.",
+  "environment": "client",
+  "license": "GPL-3.0",
+  "entrypoints": {
+    "client": ["dev.ManlyTorch.cdu_utilities.CDU_UtilsFabric"]
+  },
+  "depends": {
+    "fabricloader": ">=0.19.5",
+    "fabric-api": "*",
+    "minecraft": "~1.20"
+  }
+}

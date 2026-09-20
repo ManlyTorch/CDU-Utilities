@@ -1,0 +1,33 @@
+plugins {
+    id 'fabric-loom' version '1.6-SNAPSHOT'
+    id 'java'
+}
+
+version = "${mod_version}"
+group = 'dev.ManlyTorch.cdu_utilities'
+
+base {
+    archivesName = "CDU-Utilities_fabric"
+}
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(17)
+    }
+}
+
+sourceSets {
+    main {
+        java { srcDir project(':common').file('src/main/java') }
+        resources { srcDir project(':common').file('src/main/resources') }
+    }
+}
+
+dependencies {
+    minecraft "com.mojang:minecraft:${minecraft_version}"
+    // Official Mojang mappings, not Yarn - this is what lets common/
+    // compile unchanged across Forge, NeoForge and Fabric.
+    mappings loom.officialMojangMappings()
+    modImplementation "net.fabricmc.fabric-api:fabric-api:${fabric_api_version}"
+    modImplementation "net.fabricmc:fabric-loader:${fabric_loader_version}"
+}
