@@ -1,5 +1,5 @@
 plugins {
-    id 'fabric-loom' version '1.6-SNAPSHOT'
+    id 'fabric-loom' version '1.7-SNAPSHOT'
     id 'java'
 }
 
@@ -19,7 +19,7 @@ java {
 processResources {
     inputs.property 'version', version
     filesMatching('fabric.mod.json') {
-        expand 'version': version
+        expand 'version': version, 'mc_range': '~1.20'
     }
 }
 

@@ -1,0 +1,55 @@
+plugins {
+    id 'fabric-loom' version '1.7-SNAPSHOT'
+    id 'java'
+}
+
+version = "${mod_version}"
+group = 'dev.ManlyTorch.cdu_utilities'
+
+base {
+    archivesName = "CDU-Utilities_fabric_1.21"
+}
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+}
+
+def fakeSkin = tasks.register('copyFakeSkinPlayer', Copy) {
+    from(rootProject.file('neoforge/src/main/java')) { include '**/UI/FakeSkinPlayer.java' }
+    into layout.buildDirectory.dir('generated/fakeskin')
+}
+
+processResources {
+    inputs.property 'version', version
+    filesMatching('fabric.mod.json') {
+        expand 'version': version, 'mc_range': '~1.21'
+    }
+}
+
+sourceSets {
+    main {
+        java {
+            srcDir project(':common').file('src/main/java')
+            srcDir rootProject.file('fabric/src/main/java')
+            srcDir fakeSkin.map { it.destinationDir }
+        }
+        resources {
+            srcDir project(':common').file('src/main/resources')
+            srcDir rootProject.file('fabric/src/main/resources')
+        }
+    }
+}
+
+dependencies {
+    minecraft "com.mojang:minecraft:${forge121_minecraft_version}"
+    mappings loom.officialMojangMappings()
+    modImplementation "net.fabricmc.fabric-api:fabric-api:${fabric121_fabric_api_version}"
+    modImplementation "net.fabricmc:fabric-loader:${fabric_loader_version}"
+}
+
+tasks.withType(JavaCompile).configureEach {
+    dependsOn fakeSkin
+    exclude { it.file.toPath().startsWith(project(':common').projectDir.toPath()) && it.name == 'FakeSkinPlayer.java' }
+}

@@ -5,14 +5,14 @@ license="GPL-3.0"
 [[dependencies.cduutils]]
     modId="neoforge"
     mandatory=true
-    versionRange="[20.2,)"
+    versionRange="${neo_range}"
     ordering="NONE"
     side="CLIENT"
 
 [[dependencies.cduutils]]
     modId="minecraft"
     mandatory=true
-    versionRange="[1.20.2,1.21)"
+    versionRange="${mc_range}"
     ordering="NONE"
     side="CLIENT"
 

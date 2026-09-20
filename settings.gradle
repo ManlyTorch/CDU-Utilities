@@ -8,4 +8,13 @@ pluginManagement {
     }
 }
 rootProject.name = 'CDU-Utilities'
-include 'common', 'forge', 'neoforge', 'fabric'
+include 'common'
+
+if (providers.gradleProperty('build121').isPresent()) {
+    include 'forge121', 'neoforge121', 'fabric121'
+    project(':forge121').projectDir = file('1.21/forge')
+    project(':neoforge121').projectDir = file('1.21/neoforge')
+    project(':fabric121').projectDir = file('1.21/fabric')
+} else {
+    include 'forge', 'neoforge', 'fabric'
+}

@@ -19,7 +19,7 @@ java {
 processResources {
     inputs.property 'mod_version', mod_version
     filesMatching('META-INF/mods.toml') {
-        expand 'mod_version': mod_version
+        expand 'mod_version': mod_version, 'loader_range': '[46,)', 'forge_range': '[46,50)', 'mc_range': '[1.20,1.20.6)'
     }
 }
 

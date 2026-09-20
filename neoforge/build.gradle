@@ -19,7 +19,7 @@ java {
 processResources {
     inputs.property 'mod_version', mod_version
     filesMatching(['META-INF/mods.toml', 'META-INF/neoforge.mods.toml']) {
-        expand 'mod_version': mod_version
+        expand 'mod_version': mod_version, 'neo_range': '[20.2,)', 'mc_range': '[1.20.2,1.21)'
     }
 }
 

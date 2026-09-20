@@ -1,0 +1,52 @@
+plugins {
+    id 'java'
+    id 'net.neoforged.gradle.userdev' version '7.0.145'
+}
+
+version = "${mod_version}"
+group = 'dev.ManlyTorch.cdu_utilities'
+
+base {
+    archivesName = "CDU-Utilities_neoforge_1.21"
+}
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+}
+
+processResources {
+    inputs.property 'mod_version', mod_version
+    filesMatching('META-INF/neoforge.mods.toml') {
+        expand 'mod_version': mod_version, 'neo_range': '[21.0,21.2)', 'mc_range': '[1.21,1.21.2)'
+    }
+}
+
+sourceSets {
+    main {
+        java {
+            srcDir project(':common').file('src/main/java')
+            srcDir rootProject.file('neoforge/src/main/java')
+        }
+        resources {
+            srcDir project(':common').file('src/main/resources')
+            srcDir rootProject.file('neoforge/src/main/resources')
+            exclude 'META-INF/mods.toml'
+        }
+    }
+}
+
+runs {
+    client {
+        modSource project.sourceSets.main
+    }
+}
+
+dependencies {
+    implementation "net.neoforged:neoforge:${neoforge121_version}"
+}
+
+tasks.withType(JavaCompile).configureEach {
+    exclude { it.file.toPath().startsWith(project(':common').projectDir.toPath()) && it.name == 'FakeSkinPlayer.java' }
+}

@@ -1,0 +1,62 @@
+plugins {
+    id 'net.minecraftforge.gradle' version '[6.0.24,6.2)'
+    id 'java'
+}
+
+version = "${mod_version}"
+group = 'dev.ManlyTorch.cdu_utilities'
+
+base {
+    archivesName = "CDU-Utilities_forge_1.21"
+}
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+}
+
+def fakeSkin = tasks.register('copyFakeSkinPlayer', Copy) {
+    from(rootProject.file('neoforge/src/main/java')) { include '**/UI/FakeSkinPlayer.java' }
+    into layout.buildDirectory.dir('generated/fakeskin')
+}
+
+processResources {
+    inputs.property 'mod_version', mod_version
+    filesMatching('META-INF/mods.toml') {
+        expand 'mod_version': mod_version, 'loader_range': '[50,)', 'forge_range': '[50,53)', 'mc_range': '[1.20.6,1.21.2)'
+    }
+}
+
+sourceSets {
+    main {
+        java {
+            srcDir project(':common').file('src/main/java')
+            srcDir rootProject.file('forge/src/main/java')
+            srcDir fakeSkin.map { it.destinationDir }
+        }
+        resources {
+            srcDir project(':common').file('src/main/resources')
+            srcDir rootProject.file('forge/src/main/resources')
+        }
+    }
+}
+
+minecraft {
+    mappings channel: 'official', version: "${forge121_minecraft_version}"
+    runs {
+        client {
+            workingDirectory project.file('run')
+            mods { cduutils { source sourceSets.main } }
+        }
+    }
+}
+
+dependencies {
+    minecraft "net.minecraftforge:forge:${forge121_minecraft_version}-${forge121_version}"
+}
+
+tasks.withType(JavaCompile).configureEach {
+    dependsOn fakeSkin
+    exclude { it.file.toPath().startsWith(project(':common').projectDir.toPath()) && it.name == 'FakeSkinPlayer.java' }
+}
