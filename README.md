@@ -7,7 +7,7 @@ Non versioned support:
 Fabric: 1.20-1.20.6                              
 Forge: 1.20-1.20.4                              
 NeoForge: 1.20.2-1.20.6                              
-Default key to sell is T, Y for bulk                            
+Default key to sell item in hand is T, Y for bulk                            
 Current commands:                           
 /addSell \<price\> \<count\> \<listingTime\>                           
 /addBulkSell \<price\> \<count\> \<listingTime\>                           
