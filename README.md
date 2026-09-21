@@ -7,5 +7,9 @@ Non versioned support:
 Fabric: 1.20-1.20.6                              
 Forge: 1.20-1.20.4                              
 NeoForge: 1.20.2-1.20.6                              
-Currently there is just /stats \<PlayerName\> command.
+Default key to sell is T, Y for bulk                            
+Current commands:                           
+/addSell \<price\> \<count\> \<listingTime\>                           
+/addBulkSell \<price\> \<count\> \<listingTime\>                           
+/stats \<PlayerName\> command.                           
 <img width="743" height="752" alt="image" src="https://github.com/user-attachments/assets/ef91c950-76a4-48bf-87ee-658763fe62f7" />
