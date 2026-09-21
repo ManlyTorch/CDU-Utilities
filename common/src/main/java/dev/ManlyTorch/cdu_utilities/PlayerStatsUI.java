@@ -125,7 +125,7 @@ public class PlayerStatsUI {
 
     public static final MutableComponent fetching = Component.literal("Fetching stats for ").withStyle(ChatFormatting.GRAY);
 
-    private PlayerStatsUI() { buildRoot(); }
+    private PlayerStatsUI() { buildRoot(); updateLeaderboards(new ArrayList<>()); }
     public static PlayerStatsUI getInstance() { return classObj; }
 
     public static void buildRoot() {
@@ -308,9 +308,9 @@ public class PlayerStatsUI {
             // SKIN
             threads.add(runThread(() -> skinURL[0] = MojangService.getSkin(uuid)));
             // CDU
-            for (String statCategory : lbStats.values()) { threads.add(runThread(() -> CDUService.getLeaderboard(statCategory))); }
             threads.add(runThread(() -> {
                 playerStats[0] = CDUService.getPlayerData(uuid, username);
+                if (playerStats[0] == null) return;
                 List<Thread> awardThreads = new ArrayList<>();
                 for (JsonElement element : playerStats[0].getAsJsonArray("player_awards")) {
                    String imgUrl = element.getAsJsonObject().get("img_url").getAsString();
@@ -340,7 +340,7 @@ public class PlayerStatsUI {
 
     private static void updateUI(JsonObject playerStats, String username, UUID uuid, String skin_url) {
         // time
-        Instant utcInstant = Instant.parse("2026-09-17T03:09:53.000Z");
+        Instant utcInstant = Instant.parse(playerStats.get("lastjoinedtime").getAsString());
         ZonedDateTime localTime = utcInstant.atZone(timezone);
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern(" 'on' MM/dd/yyyy", Locale.ENGLISH);
         Component formatted = Component.literal(localTime.format(formatter));
@@ -372,10 +372,28 @@ public class PlayerStatsUI {
             TextLabel lbLabel = labels.statLBLabel();
             lbLabel.setParent(null);
             if (lbStats.get(stat) == null) continue;
-            Integer lbSpot = CDUService.getLBSpot(uuid.toString(), lbStats.get(stat));
-            if (lbSpot == null) continue;
-            lbLabel.setParent(labels.valueLabel()).setText(Component.literal("#" + lbSpot + " ")).setRainbowText(lbSpot == 1)
-                .setTextColor(lbColors.get(lbSpot) != null ? lbColors.get(lbSpot) : LBSPOT_COLOR);
+            Thread lbThread = runThread(() -> {
+                Integer lbSpot = CDUService.getLBSpot(uuid.toString(), lbStats.get(stat));
+                if (lbSpot == null) {
+                    long longVal = displayName == "Playtime" ? playtimeToSeconds(element.getAsString()) : element.getAsLong();
+                    List<JsonObject> rawLB = CDUService.getRawLeaderboard(lbStats.get(stat), false);
+                    if (rawLB == null) return;
+                    else if (rawLB.get(rawLB.size() - 1).get("value").getAsLong() < longVal) {
+                        List<Thread> threads = new ArrayList<>();
+                        updateLeaderboards(threads);
+                        for (Thread t : threads) {
+                            try { t.join(); }
+                            catch (InterruptedException e) { Thread.currentThread().interrupt(); return; }
+                        }
+                    } else return;
+                    lbSpot = CDUService.getLBSpot(uuid.toString(), lbStats.get(stat));
+                };
+                if (lbSpot == null) return; // CDU lb hasn't updated, not gonna bother with upd manually
+                lbLabel.setParent(labels.valueLabel()).setText(Component.literal("#" + lbSpot + " ")).setRainbowText(lbSpot == 1)
+                    .setTextColor(lbColors.get(lbSpot) != null ? lbColors.get(lbSpot) : LBSPOT_COLOR);
+            });
+            if (CDUService.getLBSpot(uuid.toString(), lbStats.get(stat)) != null) try { lbThread.join(); }
+            catch (InterruptedException e) { Thread.currentThread().interrupt(); return; };
         }
 
         // awards
@@ -430,6 +448,28 @@ public class PlayerStatsUI {
         Minecraft mc = Minecraft.getInstance();
         mc.setScreen(returnScreen instanceof ChatScreen ? null : returnScreen);
     };
+
+    public static void updateLeaderboards(List<Thread> threads) {
+        for (String statCategory : lbStats.values()) {
+            threads.add(runThread(() -> CDUService.getLeaderboard(statCategory, true)));
+        }
+    }
+
+    public static long playtimeToSeconds(String playtime) {
+        long total = 0;
+        for (String part : playtime.split(",")) {
+            part = part.trim();
+            if (part.isEmpty()) continue;
+            long value = Long.parseLong(part.substring(0, part.length() - 1));
+            switch (part.charAt(part.length() - 1)) {
+                case 'd': total += value * 86400; break;
+                case 'h': total += value * 3600; break;
+                case 'm': total += value * 60; break;
+                case 's': total += value; break;
+            }
+        }
+        return total;
+    }
 
     private static String formatNumber(long value) { return String.format(Locale.US, "%,d", value);};
 

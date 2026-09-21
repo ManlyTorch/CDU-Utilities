@@ -31,8 +31,8 @@ public class HTTPService {
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
             conn.setRequestMethod("GET");
             conn.setRequestProperty("Accept", "application/json");
-            conn.setConnectTimeout(5000);
-            conn.setReadTimeout(8000);
+            conn.setConnectTimeout(20000);
+            conn.setReadTimeout(10000);
             int code = conn.getResponseCode();
             InputStream stream = (code >= 200 && code < 300) ? conn.getInputStream() : conn.getErrorStream();
             try (InputStreamReader reader = new InputStreamReader(stream, StandardCharsets.UTF_8)) {
