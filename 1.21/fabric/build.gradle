@@ -24,7 +24,7 @@ def fakeSkin = tasks.register('copyFakeSkinPlayer', Copy) {
 processResources {
     inputs.property 'version', version
     filesMatching('fabric.mod.json') {
-        expand 'version': version, 'mc_range': '~1.21'
+        expand 'version': version, 'mc_range': '>=1.21 <=1.21.1'
     }
 }
 
