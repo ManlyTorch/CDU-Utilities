@@ -45,18 +45,15 @@ public class PlayerStatsUI {
     private static final int STATS_WIDTH = 360;
     private static final int COPIED_COOLDOWN = 5;
     private static final int BOOSTER_SIZE = 14;
-
-    private static final int AWARD_GAPSIZE = AWARD_GAP + AWARD_SIZE;
-    private static final int blockTop = PADDING + 16 + 8;
-    private static final int blockBottom = blockTop + 16 * ROW_HEIGHT;
-    private static final int awardsY = blockBottom + 10;
+    
+    private static final UDim2 statSize = new UDim2(.6, -PADDING, 0, ROW_HEIGHT);
 
     private static final ZoneId timezone = ZoneId.systemDefault();
 
     public static Long discordId;
     public static boolean discordLinked;
     public static Frame root;
-
+    
     private static UIScreen screen = new UIScreen("CDUStatsDisplay");
     private static Screen returnScreen;
     public static TextButton closeButton;
@@ -66,9 +63,15 @@ public class PlayerStatsUI {
     public static TextLabel usernameLabel;
     public static SkinDisplay playerDisplay;
     public static ImageLabel serverBoosterImage;
+    public static TextLabel leaderboardHeader;
+    public static TextLabel awardsHeader;
+    public static Frame awardsDivider;
+    public static Frame lbDivider;
+
 
     public static Map<String, ImageLabel> awardLabels = new HashMap<>();
-    public static Map<String, StatLabels> statLabels = new HashMap<>();
+    public static Map<String, StatLabel> statLabels = new HashMap<>();
+    public static Map<String, StatLabel> lbStatLabels = new HashMap<>();
     public static List<StatRow> statRows = List.of(
         new StatRow("Playtime", "playtime"),
         new StatRow("Unique Servers", "uniqueserversseenon"),
@@ -87,6 +90,11 @@ public class PlayerStatsUI {
         new StatRow("Swum", "mc_distanceswum"),
         new StatRow("Walked", "mc_distancewalked")
     );
+    public static List<StatRow> lbStatRows = List.of(
+        new StatRow("Overall Rank", "overall_rank"),
+        new StatRow("Wealth", "total_balance"),
+        new StatRow("Donated", "donations")
+    );
     public static Map<String, String> lbStats = Map.ofEntries(
         Map.entry("playtime", "playtime"),
         Map.entry("mc_blocksbroken", "mc_blocks_broken"),
@@ -101,7 +109,10 @@ public class PlayerStatsUI {
         Map.entry("mc_distancewalked", "mc_distance_walked"),
         Map.entry("mc_jumps", "mc_jumps"),
         Map.entry("mc_mobskilled", "mc_mobs_killed"),
-        Map.entry("mc_playerskilled", "mc_players_killed")
+        Map.entry("mc_playerskilled", "mc_players_killed"),
+        Map.entry("overall_rank", "overall_rank"),
+        Map.entry("total_balance", "total_balance"),
+        Map.entry("donations", "donations")
     );
     public static final List<String> rainbowUUIDs = List.of(
         "4772296d-7c7e-4744-9a78-953d76dd8ac0",
@@ -110,18 +121,22 @@ public class PlayerStatsUI {
         "1418475b-1029-4a9a-af78-fbf5d59dfee0",
         "39bddbb3-e4ca-4be1-9b37-7ec36082817b"
     );
-    public static final Map<Integer, String> daySuffixs = Map.of(
-        1, "st",
-        2, "nd",
-        3, "rd"
-    );
     public static final Map<Integer, Integer> lbColors = Map.of(
-        2, 0xff515151,
+        2, 0xff727272,
         3, 0xffaa6428
     );
 
+    private static final int AWARD_GAPSIZE = AWARD_GAP + AWARD_SIZE;
+    private static final int TOP_DIVIDER_Y = PADDING + 16;
+    private static final int TOTAL_ROW_HEIGHT = statRows.size() * ROW_HEIGHT;
+    private static final int STATS_TOP = TOP_DIVIDER_Y + 8;
+    private static final int STATS_BOTTOM = STATS_TOP + TOTAL_ROW_HEIGHT;
+
+    private static final UDim2 defAwardHeader = new UDim2(.5, 0, 0, STATS_BOTTOM + 4);
+    private static final UDim2 defAwardDivider = UDim2.fromOffset(PADDING, STATS_BOTTOM + 22);
+
     public record StatRow(String idx, String val) {}
-    public record StatLabels(TextLabel nameLabel, TextLabel statLBLabel, TextLabel valueLabel) {};
+    public record StatLabel(TextLabel nameLabel, TextLabel statLBLabel, TextLabel valueLabel) {};
 
     public static final MutableComponent fetching = Component.literal("Fetching stats for ").withStyle(ChatFormatting.GRAY);
 
@@ -175,7 +190,7 @@ public class PlayerStatsUI {
 
         @SuppressWarnings("unused")
         Frame topDivider = new Frame()
-            .setPosition(UDim2.fromOffset(PADDING, PADDING + 16))
+            .setPosition(UDim2.fromOffset(PADDING, TOP_DIVIDER_Y))
             .setSize(new UDim2(1, -PADDING * 2, 0, 1))
             .setBackgroundColor(DIVIDER_COLOR)
             .setBorderColor(BLANK)
@@ -184,12 +199,13 @@ public class PlayerStatsUI {
         buildUser();
         buildAwards();
         buildStatRows();
+        buildLBStats();
     }
     
     public static void buildUser() {
         playerDisplay = new SkinDisplay()
-            .setPosition(UDim2.fromOffset(PADDING, blockTop))
-            .setSize(new UDim2(0.4, -PADDING*2 - 4, 0, statRows.size() * ROW_HEIGHT - PADDING))
+            .setPosition(UDim2.fromOffset(PADDING, STATS_TOP))
+            .setSize(new UDim2(0.4, -PADDING*2 - 4, 0, TOTAL_ROW_HEIGHT - PADDING))
             .setBackgroundColor(BLANK)
             .setParent(root);
 
@@ -238,60 +254,82 @@ public class PlayerStatsUI {
     }
     
     public static void buildAwards() {
-        @SuppressWarnings("unused")
-        TextLabel awardsHeader = new TextLabel()
+        awardsHeader = new TextLabel()
             .setText(Component.literal("Awards"))
             .setTextXAlignment(TextAlignment.CENTER)
-            .setPosition(new UDim2(.5, 0, 0, awardsY - 6))
+            .setPosition(defAwardHeader)
             .setAnchorPoint(new Vector2(.5))
             .setSize(UDim2.fromOffset(100, 12))
             .setBackgroundColor(BLANK)
             .setBorderColor(BLANK)
             .setParent(root);
         
-        @SuppressWarnings("unused")
-        Frame awardsDivider = new Frame()
+        awardsDivider = new Frame()
             .setBackgroundColor(DIVIDER_COLOR)
             .setBorderColor(BLANK)
-            .setPosition(UDim2.fromOffset(PADDING, awardsY + 12))
+            .setPosition(defAwardDivider)
             .setSize(new UDim2(1, -PADDING * 2, 0, 1))
             .setParent(root);
     }
 
+    public static void buildLBStats() {
+        leaderboardHeader = new TextLabel()
+            .setText(Component.literal("Leaderboard Stats"))
+            .setTextXAlignment(TextAlignment.CENTER)
+            .setPosition(new UDim2(.5, 0, 0, STATS_BOTTOM + 4))
+            .setAnchorPoint(new Vector2(.5))
+            .setSize(UDim2.fromOffset(100, 12))
+            .setBackgroundColor(BLANK)
+            .setBorderColor(BLANK);
+        
+        lbDivider = new Frame()
+            .setBackgroundColor(DIVIDER_COLOR)
+            .setBorderColor(BLANK)
+            .setPosition(UDim2.fromOffset(PADDING, STATS_BOTTOM + 22))
+            .setSize(new UDim2(1, -PADDING * 2, 0, 1));
+    }
+
     public static void buildStatRows() {
         int row = 0;
-        UDim2 statSize = new UDim2(.6, -PADDING, 0, ROW_HEIGHT);
-        for (StatRow statRow : statRows) {
-            int statY = blockTop + row * ROW_HEIGHT;
-            TextLabel statLabel = new TextLabel()
-                .setText(Component.literal(statRow.idx()))
-                .setTextColor(COLOR_TEXT_MUTED)
-                .setTextXAlignment(TextAlignment.LEFT)
-                .setPosition(new UDim2(.4, 0, 0, statY))
-                .setSize(statSize)
-                .setBackgroundColor(BLANK)
-                .setBorderColor(BLANK)
-                .setParent(root);
-            TextLabel statValue = new TextLabel()
-                .setText(Component.literal("NULL"))
-                .setTextXAlignment(TextAlignment.RIGHT)
-                .setPosition(new UDim2(1, -PADDING, 0, statY))
-                .setAutomaticSize(true)
-                .setBackgroundColor(BLANK)
-                .setBorderColor(BLANK)
-                .setParent(root);
-            TextLabel statLBLabel = new TextLabel()
-                .setText(Component.literal("#? "))
-                .setTextXAlignment(TextAlignment.RIGHT)
-                .setPosition(UDim2.fromScale(-1, .5))
-                .setAnchorPoint(new Vector2(0, .5))
-                .setAutomaticSize(true)
-                .setBackgroundColor(BLANK)
-                .setBorderColor(BLANK)
-                .setParent(statValue);
+        for (StatRow statRow : statRows) { statLabels.put(statRow.idx(), buildStatLabels(statRow, row)); row++; }
+        for (StatRow statRow : lbStatRows) {
+            StatLabel statLabel = buildStatLabels(statRow, row);
+            statLabel.nameLabel().setAnchorPoint(new Vector2(.5, .5)).setParent(null);
+            lbStatLabels.put(statRow.idx(), statLabel);
             row++;
-            statLabels.put(statRow.idx(), new StatLabels(statLabel, statLBLabel, statValue));
         }
+    }
+
+    public static StatLabel buildStatLabels(StatRow statRow, int row) {
+        int statY = STATS_TOP + row * ROW_HEIGHT;
+        TextLabel statLabel = new TextLabel()
+            .setText(Component.literal(statRow.idx()))
+            .setTextColor(COLOR_TEXT_MUTED)
+            .setTextXAlignment(TextAlignment.LEFT)
+            .setPosition(new UDim2(.4, 0, 0, statY))
+            .setSize(statSize)
+            .setBackgroundColor(BLANK)
+            .setBorderColor(BLANK)
+            .setParent(root);
+        TextLabel statValue = new TextLabel()
+            .setText(Component.literal("NULL"))
+            .setTextXAlignment(TextAlignment.RIGHT)
+            .setPosition(UDim2.fromScale(1, .5))
+            .setAnchorPoint(new Vector2(0, .5))
+            .setAutomaticSize(true)
+            .setBackgroundColor(BLANK)
+            .setBorderColor(BLANK)
+            .setParent(statLabel);
+        TextLabel statLBLabel = new TextLabel()
+            .setText(Component.literal("#? "))
+            .setTextXAlignment(TextAlignment.RIGHT)
+            .setPosition(UDim2.fromScale(-1, .5))
+            .setAnchorPoint(new Vector2(0, .5))
+            .setAutomaticSize(true)
+            .setBackgroundColor(BLANK)
+            .setBorderColor(BLANK)
+            .setParent(statValue);
+        return new StatLabel(statLabel, statLBLabel, statValue);
     }
 
     public static void loadPlayerStats(String username, Screen prevScreen) {
@@ -339,7 +377,7 @@ public class PlayerStatsUI {
     public static Thread runThread(Runnable callback) { Thread t = createThread(callback); t.start(); return t; }
 
     private static void updateUI(JsonObject playerStats, String username, UUID uuid, String skin_url) {
-        // time
+        // timestamp
         Instant utcInstant = Instant.parse(playerStats.get("lastjoinedtime").getAsString());
         ZonedDateTime localTime = utcInstant.atZone(timezone);
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern(" 'on' MM/dd/yyyy", Locale.ENGLISH);
@@ -367,7 +405,7 @@ public class PlayerStatsUI {
         for (StatRow statRow : statRows) {
             String displayName = statRow.idx(); String stat = statRow.val(); JsonElement element = playerStats.get(stat);
             String strVal = displayName == "Playtime" ? element.getAsString() : formatNumber(element.getAsLong());
-            StatLabels labels = statLabels.get(displayName);
+            StatLabel labels = statLabels.get(displayName);
             labels.valueLabel().setText(Component.literal(strVal));
             TextLabel lbLabel = labels.statLBLabel();
             lbLabel.setParent(null);
@@ -395,9 +433,40 @@ public class PlayerStatsUI {
             if (CDUService.getLBSpot(uuid.toString(), lbStats.get(stat)) != null) try { lbThread.join(); }
             catch (InterruptedException e) { Thread.currentThread().interrupt(); return; };
         }
+        int activeLBStats = 0;
+        for (StatRow statRow : lbStatRows) {
+            String displayName = statRow.idx(); String stat = statRow.val();
+            StatLabel labels = lbStatLabels.get(displayName);
+            Integer lbSpot = CDUService.getLBSpot(uuid.toString(), stat);
+            if (lbSpot == null) { labels.nameLabel().setParent(null); continue; }
+            labels.nameLabel().setPosition(new UDim2(.5, 0, 0, STATS_BOTTOM + 34 + activeLBStats * ROW_HEIGHT))
+                .setParent(root);
+            List<JsonObject> rawLB = CDUService.getRawLeaderboard(lbStats.get(stat), false);
+            labels.statLBLabel().setText(Component.literal("#" + lbSpot + " ")).setRainbowText(lbSpot == 1)
+                .setTextColor(lbColors.get(lbSpot) != null ? lbColors.get(lbSpot) : LBSPOT_COLOR);
+            JsonObject lbObj = rawLB.get(lbSpot);
+            labels.valueLabel().setText(Component.literal(formatNumber(lbObj.get("value").getAsLong())));
+            activeLBStats++;
+        }
+        int lbYAdd = 0;
+        if (activeLBStats > 0) {
+            leaderboardHeader.setPosition(defAwardHeader)
+                .setParent(root);
+            lbDivider.setPosition(defAwardDivider)
+                .setParent(root);
+            // 22 divider bottom + 6 top gap
+            lbYAdd = 22 + activeLBStats * ROW_HEIGHT;
+            awardsHeader.setPosition(new UDim2(.5, 0, 0, STATS_BOTTOM + 4 + lbYAdd));
+            awardsDivider.setPosition(UDim2.fromOffset(PADDING, STATS_BOTTOM + 22 + lbYAdd));
+        } else {
+            leaderboardHeader.setParent(null);
+            lbDivider.setParent(null);
+            awardsHeader.setPosition(defAwardHeader);
+            awardsDivider.setPosition(defAwardDivider);
+        }
 
         // awards
-        int awardY = PADDING + (16 * ROW_HEIGHT) + AWARD_GAP + 46;
+        int awardY = lbYAdd + STATS_BOTTOM + AWARD_GAP + 22;
         int curX = PADDING;
         int lastRow = 0;
         int curAward = 0;
@@ -425,8 +494,7 @@ public class PlayerStatsUI {
             int curRow = (int)Math.floor(curAward / AWARDS_PER_ROW);
             if (curRow != lastRow) { curX = PADDING; lastRow = curRow; }
             if (curAward - curRow * AWARDS_PER_ROW == 5) curX += 2;
-            awardDisplay
-                .setPosition(UDim2.fromOffset(curX, awardY + curRow * AWARD_GAPSIZE))
+            awardDisplay.setPosition(UDim2.fromOffset(curX, awardY + curRow * AWARD_GAPSIZE))
                 .setParent(root);
             curX += AWARD_GAPSIZE;
             curAward++;
