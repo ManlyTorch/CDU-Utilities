@@ -21,6 +21,8 @@ public final class StatsCommand {
 
     public static void register() {
         ClientCommandRegistrationCallback.EVENT.register((CommandDispatcher<FabricClientCommandSource> dispatcher, net.minecraft.commands.CommandBuildContext registryAccess) -> {
+            dispatcher.register(AutoSell.command("addSell", "normal"));
+            dispatcher.register(AutoSell.command("addBulkSell", "bulk"));
             dispatcher.register(
                 ClientCommandManager.literal("stats").then(ClientCommandManager.argument("username", word())
                     .suggests((context, builder) -> {

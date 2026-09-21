@@ -28,6 +28,7 @@ sourceSets {
         java {
             srcDir project(':common').file('src/main/java')
             srcDir rootProject.file('neoforge/src/main/java')
+            srcDir file('src/main/java')
         }
         resources {
             srcDir project(':common').file('src/main/resources')
@@ -49,4 +50,5 @@ dependencies {
 
 tasks.withType(JavaCompile).configureEach {
     exclude { it.file.toPath().startsWith(project(':common').projectDir.toPath()) && it.name == 'FakeSkinPlayer.java' }
+    exclude { it.file.toPath().startsWith(rootProject.file('neoforge/src/main/java').toPath()) && it.name == 'CDU_Utils.java' }
 }

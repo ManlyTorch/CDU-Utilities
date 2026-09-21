@@ -22,6 +22,8 @@ public final class StatsCommand {
 
     @SubscribeEvent
     public static void register(RegisterClientCommandsEvent event) {
+        event.getDispatcher().register(AutoSell.command("addSell", "normal"));
+        event.getDispatcher().register(AutoSell.command("addBulkSell", "bulk"));
         event.getDispatcher().register(
             literal("stats").then(argument("username", word())
                 .suggests((context, builder) -> {

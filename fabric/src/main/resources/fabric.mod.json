@@ -7,7 +7,7 @@
   "environment": "client",
   "license": "GPL-3.0",
   "entrypoints": {
-    "client": ["dev.ManlyTorch.cdu_utilities.CDU_UtilsFabric"]
+    "client": ["dev.ManlyTorch.cdu_utilities.CDU_Utils"]
   },
   "depends": {
     "fabricloader": ">=0.19.5",
