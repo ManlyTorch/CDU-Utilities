@@ -45,13 +45,15 @@ public final class ImageCacher {
             if (normalized != image) { image.close(); image = normalized; }
         }
         saveCached(targetCache, imgUrl, image);
-        NativeImage finalImage = image;
-        DynamicTexture texture = new DynamicTexture(finalImage);
-        ResourceLocation location = Minecraft.getInstance().getTextureManager()
-            .register(targetCache + Integer.toHexString(imgUrl.hashCode()), texture);
-        TEXTURES.put(imgUrl, new LoadedTexture(location, finalImage.getWidth(), finalImage.getHeight()));
-        STATE.put(imgUrl, State.READY);
-        return TEXTURES.get(imgUrl);
+        final NativeImage finalImage = image;
+        Minecraft.getInstance().execute(() -> {
+            DynamicTexture texture = new DynamicTexture(finalImage);
+            ResourceLocation location = Minecraft.getInstance().getTextureManager()
+                .register(targetCache + Integer.toHexString(imgUrl.hashCode()), texture);
+            TEXTURES.put(imgUrl, new LoadedTexture(location, finalImage.getWidth(), finalImage.getHeight()));
+            STATE.put(imgUrl, State.READY);
+        });
+        return null;
     };
     
     private static NativeImage convertLegacySkinIfNeeded(NativeImage src) {

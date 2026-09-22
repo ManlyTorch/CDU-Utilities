@@ -32,7 +32,6 @@ public class CDUService {
         CacheEntry cached = STATS_CACHE.get(uuid);
         if (cached != null && System.currentTimeMillis() - cached.timestamp() < STATS_CACHE_MS) return cached.data().deepCopy();
         JsonObject stats = HTTPService.getJson("api.playcdu.co/users/uuid/?uuid=" + uuid);
-        if (stats == null) return null;
         Component userComp = Component.literal(username).withStyle(ChatFormatting.WHITE);
         LocalPlayer plyr = Minecraft.getInstance().player;
         if (stats == null) { plyr.displayClientMessage(noStats.copy().append(userComp), true); return null; }
@@ -58,8 +57,20 @@ public class CDUService {
         List<JsonObject> rawLB = new ArrayList<>();
         String categoryURL = "craftdownunder.co/api/leaderboards?category=" + statCategory;
         JsonObject top50 = HTTPService.getJson(categoryURL + "&page=1");
-        if (top50 == null) return builtLB;
         JsonObject top100 = HTTPService.getJson(categoryURL + "&page=2");
+        if (top50 == null) {
+            for (int i=0; i<4; i++) {
+                top50 = HTTPService.getJson(categoryURL + "&page=1");
+                if (top50 == null) { sleep(3000); continue;}
+            }
+        }
+        if (top50 == null) return builtLB;
+        if (top100 == null) {
+            for (int i=0; i<4; i++) {
+                top100 = HTTPService.getJson(categoryURL + "&page=2");
+                if (top100 == null) { sleep(3000); continue;}
+            }
+        }
         if (top100 == null) { top100 = new JsonObject(); top100.add("items", new JsonArray()); }
         for (JsonArray leaderboard : List.of(top50.getAsJsonArray("items"), top100.getAsJsonArray("items"))) {
             for (JsonElement element : leaderboard) {
@@ -72,6 +83,8 @@ public class CDUService {
         leaderboards.put(statCategory, builtLB);
         return builtLB;
     }
+
+    public static void sleep(int ms) { try { Thread.sleep(ms); } catch (InterruptedException e) { return; } }
 
     public static List<JsonObject> getRawLeaderboard(String statCategory, boolean force) {
         getLeaderboard(statCategory, force);

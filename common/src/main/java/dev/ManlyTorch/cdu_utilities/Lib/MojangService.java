@@ -104,12 +104,11 @@ public final class MojangService {
     };
 
     public static String fetchUUID(String username) {
-        try {
-            String uuid = HTTPService.getJson("api.mojang.com/users/profiles/minecraft/" + username).get("id").getAsString();
-            UUID_CACHE.put(username, uuid); saveCache(); return uuid;
-        } catch (Exception e) {
-            throw new RuntimeException("Couldn't resolve a UUID for '" + username + "': " + e.getMessage(), e);
-        }
+        JsonObject response = HTTPService.getJson("api.mojang.com/users/profiles/minecraft/" + username);
+        if (response == null) return null;
+        JsonElement uuid = response.get("id");
+        if (uuid == null) return null;
+        UUID_CACHE.put(username, uuid.getAsString()); saveCache(); return uuid.getAsString();
     };
 
     private static void loadCache() {

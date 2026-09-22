@@ -29,8 +29,8 @@ public class SkinDisplay extends Frame {
     public String skinURL;
     public String username = "Player";
     private RemotePlayer fakePlyr;
-    private float rotationY = 180f;
-    private float rotationX = 0f;
+    private float xRot = 180f;
+    private float yRot = 0f;
     private boolean dragging = false;
     private double lastMouseX;
     private double lastMouseY;
@@ -66,7 +66,8 @@ public class SkinDisplay extends Frame {
         }
         if (dragging) {
             double dx = mouseX - lastMouseX; double dy = mouseY - lastMouseY;
-            rotationY += (float) dx; rotationX += (float) dy;
+            float facing = (float) Math.signum(Math.cos(Math.toRadians(yRot)));
+            xRot -= (float) dx * facing; yRot += (float) dy;
             lastMouseX = mouseX; lastMouseY = mouseY;
         }
     }
@@ -102,7 +103,7 @@ public class SkinDisplay extends Frame {
         Vector3f light1 = new Vector3f(0.0f, 0.0f, 1.0f);
         RenderSystem.setShaderLights(light0, light1);
         Quaternionf baseFacing = new Quaternionf().rotateY((float) Math.PI);
-        Quaternionf userRotation = new Quaternionf().rotateX((float) Math.toRadians(-rotationX)).rotateY((float) Math.toRadians(-rotationY));
+        Quaternionf userRotation = new Quaternionf().rotateX((float) Math.toRadians(-yRot)).rotateY((float) Math.toRadians(-xRot));
         gg.pose().pushPose(); gg.pose().translate(x, y, 50.0); gg.pose().scale(scale, -scale, scale);
         gg.pose().translate(0, PIVOT_HEIGHT, 0); gg.pose().mulPose(baseFacing); gg.pose().mulPose(userRotation); gg.pose().translate(0, -PIVOT_HEIGHT, 0);
         EntityRenderDispatcher dispatcher = Minecraft.getInstance().getEntityRenderDispatcher();

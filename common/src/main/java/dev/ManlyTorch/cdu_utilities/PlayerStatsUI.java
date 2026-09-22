@@ -378,16 +378,20 @@ public class PlayerStatsUI {
 
     private static void updateUI(JsonObject playerStats, String username, UUID uuid, String skin_url) {
         // timestamp
-        Instant utcInstant = Instant.parse(playerStats.get("lastjoinedtime").getAsString());
-        ZonedDateTime localTime = utcInstant.atZone(timezone);
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern(" 'on' MM/dd/yyyy", Locale.ENGLISH);
-        Component formatted = Component.literal(localTime.format(formatter));
+        if (!playerStats.get("lastjoinedtime").isJsonNull()) {
+            Instant utcInstant = Instant.parse(playerStats.get("lastjoinedtime").getAsString());
+            ZonedDateTime localTime = utcInstant.atZone(timezone);
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern(" 'on' MM/dd/yyyy", Locale.ENGLISH);
+            Component formatted = Component.literal(localTime.format(formatter));
+            lastSeenDate.setText(formatted);
+        } else {
+            lastSeenDate.setText(Component.literal(" on Unknown"));
+        }
 
         // misc
         usernameLabel.setText(Component.literal(username)).setRainbowText(rainbowUUIDs.contains(uuid.toString()));
         serverBoosterImage.setParent(playerStats.get("isserverbooster").getAsBoolean() ? usernameLabel : null);
         lastSeenLabel.setText(Component.literal(" " + playerStats.get("lastjoinedservername").getAsString()));
-        lastSeenDate.setText(formatted);
 
         discordId = playerStats.get("discordid").isJsonNull() ? null : playerStats.get("discordid").getAsLong();
         discordLinked = discordId != null;
@@ -444,7 +448,7 @@ public class PlayerStatsUI {
             List<JsonObject> rawLB = CDUService.getRawLeaderboard(lbStats.get(stat), false);
             labels.statLBLabel().setText(Component.literal("#" + lbSpot + " ")).setRainbowText(lbSpot == 1)
                 .setTextColor(lbColors.get(lbSpot) != null ? lbColors.get(lbSpot) : LBSPOT_COLOR);
-            JsonObject lbObj = rawLB.get(lbSpot);
+            JsonObject lbObj = rawLB.get(lbSpot-1);
             labels.valueLabel().setText(Component.literal(formatNumber(lbObj.get("value").getAsLong())));
             activeLBStats++;
         }
@@ -479,7 +483,10 @@ public class PlayerStatsUI {
             nonDuplicateAwards.add(awardName);
             ImageLabel awardDisplay = awardLabels.get(awardName);
             if (awardDisplay == null) {
-                Component desc = Component.literal(award.get("award_description").getAsString());
+                List<Component> lines = List.of(
+                    Component.literal(award.get("award_name").getAsString()),
+                    Component.literal(award.get("award_description").getAsString())
+                );
                 String imgUrl = award.get("img_url").getAsString();
                 awardDisplay = new ImageLabel()
                     .setImgURL(imgUrl)
@@ -488,7 +495,7 @@ public class PlayerStatsUI {
                     .setSize(UDim2.fromOffset(AWARD_SIZE, AWARD_SIZE));
                 awardLabels.put(awardName, awardDisplay);
                 awardDisplay.MouseHovered.onEvent(renderParams -> {
-                    renderParams.gg().renderTooltip(screen.getFont(), desc, renderParams.x(), renderParams.y());
+                    renderParams.gg().renderComponentTooltip(screen.getFont(), lines, renderParams.x(), renderParams.y());
                 });
             }
             int curRow = (int)Math.floor(curAward / AWARDS_PER_ROW);
