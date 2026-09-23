@@ -68,7 +68,6 @@ public class PlayerStatsUI {
     public static Frame awardsDivider;
     public static Frame lbDivider;
 
-
     public static Map<String, ImageLabel> awardLabels = new HashMap<>();
     public static Map<String, StatLabel> statLabels = new HashMap<>();
     public static Map<String, StatLabel> lbStatLabels = new HashMap<>();
@@ -93,6 +92,7 @@ public class PlayerStatsUI {
     public static List<StatRow> lbStatRows = List.of(
         new StatRow("Overall Rank", "overall_rank"),
         new StatRow("Wealth", "total_balance"),
+        new StatRow("Money Pit", "money_pit_total"),
         new StatRow("Donated", "donations")
     );
     public static Map<String, String> lbStats = Map.ofEntries(
@@ -112,6 +112,7 @@ public class PlayerStatsUI {
         Map.entry("mc_playerskilled", "mc_players_killed"),
         Map.entry("overall_rank", "overall_rank"),
         Map.entry("total_balance", "total_balance"),
+        Map.entry("money_pit_total", "money_pit_total"),
         Map.entry("donations", "donations")
     );
     public static final List<String> rainbowUUIDs = List.of(
@@ -419,7 +420,7 @@ public class PlayerStatsUI {
                 if (lbSpot == null) {
                     long longVal = displayName == "Playtime" ? playtimeToSeconds(element.getAsString()) : element.getAsLong();
                     List<JsonObject> rawLB = CDUService.getRawLeaderboard(lbStats.get(stat), false);
-                    if (rawLB == null) return;
+                    if (rawLB == null || rawLB.size() <= 0) return;
                     else if (rawLB.get(rawLB.size() - 1).get("value").getAsLong() < longVal) {
                         List<Thread> threads = new ArrayList<>();
                         updateLeaderboards(threads);
@@ -429,13 +430,13 @@ public class PlayerStatsUI {
                         }
                     } else return;
                     lbSpot = CDUService.getLBSpot(uuid.toString(), lbStats.get(stat));
+                    if (lbSpot == null) return; // CDU lb hasn't updated, not gonna bother with upd manually
                 };
-                if (lbSpot == null) return; // CDU lb hasn't updated, not gonna bother with upd manually
                 lbLabel.setParent(labels.valueLabel()).setText(Component.literal("#" + lbSpot + " ")).setRainbowText(lbSpot == 1)
                     .setTextColor(lbColors.get(lbSpot) != null ? lbColors.get(lbSpot) : LBSPOT_COLOR);
             });
             if (CDUService.getLBSpot(uuid.toString(), lbStats.get(stat)) != null) try { lbThread.join(); }
-            catch (InterruptedException e) { Thread.currentThread().interrupt(); return; };
+            catch (InterruptedException e) { continue; };
         }
         int activeLBStats = 0;
         for (StatRow statRow : lbStatRows) {

@@ -58,19 +58,9 @@ public class CDUService {
         String categoryURL = "craftdownunder.co/api/leaderboards?category=" + statCategory;
         JsonObject top50 = HTTPService.getJson(categoryURL + "&page=1");
         JsonObject top100 = HTTPService.getJson(categoryURL + "&page=2");
-        if (top50 == null) {
-            for (int i=0; i<4; i++) {
-                top50 = HTTPService.getJson(categoryURL + "&page=1");
-                if (top50 == null) { sleep(3000); continue;}
-            }
-        }
-        if (top50 == null) return builtLB;
-        if (top100 == null) {
-            for (int i=0; i<4; i++) {
-                top100 = HTTPService.getJson(categoryURL + "&page=2");
-                if (top100 == null) { sleep(3000); continue;}
-            }
-        }
+        if (top50 == null) { sleep(3000); top50 = HTTPService.getJson(categoryURL + "&page=1"); }
+        if (top50 == null) { leaderboards.put(statCategory, builtLB); rawLeaderboard.put(statCategory, rawLB); }
+        if (top100 == null) { sleep(3000); top100 = HTTPService.getJson(categoryURL + "&page=2"); }
         if (top100 == null) { top100 = new JsonObject(); top100.add("items", new JsonArray()); }
         for (JsonArray leaderboard : List.of(top50.getAsJsonArray("items"), top100.getAsJsonArray("items"))) {
             for (JsonElement element : leaderboard) {

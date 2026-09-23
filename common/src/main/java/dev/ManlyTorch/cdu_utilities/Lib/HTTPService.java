@@ -40,6 +40,6 @@ public class HTTPService {
                 if (code != 200) throw new IOException("HTTPService returned " + code + ": " + jsonObj);
                 return jsonObj;
             } finally {conn.disconnect();}
-        } catch (IOException e) { return null; }
+        } catch (Exception e) { return null; }
     }
 }
