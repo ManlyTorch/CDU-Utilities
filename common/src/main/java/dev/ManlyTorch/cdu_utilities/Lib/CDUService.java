@@ -59,7 +59,7 @@ public class CDUService {
         JsonObject top50 = HTTPService.getJson(categoryURL + "&page=1");
         JsonObject top100 = HTTPService.getJson(categoryURL + "&page=2");
         if (top50 == null) { sleep(3000); top50 = HTTPService.getJson(categoryURL + "&page=1"); }
-        if (top50 == null) { leaderboards.put(statCategory, builtLB); rawLeaderboard.put(statCategory, rawLB); }
+        if (top50 == null) { return builtLB; }
         if (top100 == null) { sleep(3000); top100 = HTTPService.getJson(categoryURL + "&page=2"); }
         if (top100 == null) { top100 = new JsonObject(); top100.add("items", new JsonArray()); }
         for (JsonArray leaderboard : List.of(top50.getAsJsonArray("items"), top100.getAsJsonArray("items"))) {
@@ -73,11 +73,12 @@ public class CDUService {
         leaderboards.put(statCategory, builtLB);
         return builtLB;
     }
-
-    public static void sleep(int ms) { try { Thread.sleep(ms); } catch (InterruptedException e) { return; } }
-
     public static List<JsonObject> getRawLeaderboard(String statCategory, boolean force) {
         getLeaderboard(statCategory, force);
         return rawLeaderboard.get(statCategory);
     }
+
+    public static Map<String, Integer> safeGetLeaderboard(String statCategory) { return leaderboards.get(statCategory); }
+    public static List<JsonObject> safeGetRawLeaderboard(String statCategory) { return rawLeaderboard.get(statCategory); }
+    public static void sleep(int ms) { try { Thread.sleep(ms); } catch (InterruptedException e) { return; } }
 }

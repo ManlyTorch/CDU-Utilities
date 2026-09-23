@@ -50,6 +50,8 @@ public class PlayerStatsUI {
 
     private static final ZoneId timezone = ZoneId.systemDefault();
 
+    private static boolean initLB;
+
     public static Long discordId;
     public static boolean discordLinked;
     public static Frame root;
@@ -528,6 +530,19 @@ public class PlayerStatsUI {
     public static void updateLeaderboards(List<Thread> threads) {
         for (String statCategory : lbStats.values()) {
             threads.add(runThread(() -> CDUService.getLeaderboard(statCategory, true)));
+        }
+        if (initLB) return; initLB = true;
+        checkLeaderboards(threads);
+    }
+
+    public static void checkLeaderboards(List<Thread> threads) {
+        for (String statCategory : lbStats.values()) {
+            Map<String, Integer> leaderboard = CDUService.safeGetLeaderboard(statCategory);
+            List<JsonObject> rawLeaderboard = CDUService.safeGetRawLeaderboard(statCategory);
+            if (leaderboard == null || leaderboard.size() <= 0
+                || rawLeaderboard == null || rawLeaderboard.size() <= 0) {
+                threads.add(runThread(() -> CDUService.getLeaderboard(statCategory, true)));
+            }
         }
     }
 
