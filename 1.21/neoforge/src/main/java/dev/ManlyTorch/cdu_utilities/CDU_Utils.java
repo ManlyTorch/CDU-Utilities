@@ -8,6 +8,9 @@ import net.neoforged.fml.loading.FMLEnvironment;
 import net.neoforged.neoforge.client.event.RegisterKeyMappingsEvent;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
+
+import java.util.ArrayList;
+
 import org.slf4j.Logger;
 
 @Mod("cduutils")
@@ -15,7 +18,8 @@ public class CDU_Utils {
     private static final Logger LOGGER = LogUtils.getLogger();
 
     public CDU_Utils(IEventBus modBus) {
-        LOGGER.info("Loaded", "cduutils");
+        LOGGER.info("CDU-Utils: Loaded");
+        PlayerStatsUI.updateLeaderboards(new ArrayList<>());
         if (FMLEnvironment.dist != Dist.CLIENT) return;
         NeoForge.EVENT_BUS.addListener(StatsCommand::register);
         modBus.addListener((RegisterKeyMappingsEvent e) -> { e.register(AutoSell.SELL_KEY); e.register(AutoSell.BULK_SELL_KEY); });

@@ -19,6 +19,8 @@ public class TextLabel extends Frame {
     public float speed = 0.4f;
     public float depth = 0.08f;
     public Vector2 textPadding = new Vector2();
+    public Vector2 textAbsolutePosition = new Vector2();
+    public boolean wasFont = false;
     
     @Override
     public void render(GuiGraphics gg, int mouseX, int mouseY, float partialTick) {
@@ -30,20 +32,8 @@ public class TextLabel extends Frame {
     public void renderText(GuiGraphics gg, int mouseX, int mouseY, float partialTick) {
         Font font = screen.getFont();
         if (font == null) return;
-        int width = font.width(text); int height = font.lineHeight;
-        int x = (int)absolutePosition.x; int y = (int)absolutePosition.y;
-        if (automaticSize) {
-            if (textXAlignment == TextAlignment.LEFT) { x += textPadding.x; }
-            else if (textXAlignment == TextAlignment.CENTER) { x += (absoluteSize.x - width) / 2 + textPadding.x; }
-            else if (textXAlignment == TextAlignment.RIGHT) { x += -width + textPadding.x; }
-        } else {
-            if (textXAlignment == TextAlignment.LEFT) { x += textPadding.x; }
-            else if (textXAlignment == TextAlignment.CENTER) { x += absoluteSize.x/2+textPadding.x-width/2; }
-            else if (textXAlignment == TextAlignment.RIGHT) { x += absoluteSize.x-width+textPadding.x; }
-        }
-        if (textYAlignment == TextAlignment.CENTER) { y += absoluteSize.y/2+textPadding.y-height/2; }
-        else if (textYAlignment == TextAlignment.BOTTOM) { y += absoluteSize.y-height+textPadding.y; }
-        else if (textYAlignment == TextAlignment.TOP) { y += textPadding.y; }
+        if (!wasFont) this.updateCalculations();
+        int x = (int)textAbsolutePosition.x; int y = (int)textAbsolutePosition.y;
         if (rainbowText) drawRainbowGradientText(gg, font, text.getString(), x, y, depth, speed);
         else gg.drawString(font, text, x, y, textColor, textShadow);
     };
@@ -76,18 +66,35 @@ public class TextLabel extends Frame {
     @Override
     public void updateCalculations() {
         int xs; int ys;
-        if (automaticSize && this.screen.getFont() != null) {
-            Font font = this.screen.getFont();
-            xs = (int)clamp(font.width(text), minSize.x, maxSize.x);
-            ys = (int)clamp(font.lineHeight, minSize.y, maxSize.y);
+        Font font = this.screen.getFont();
+        wasFont = font != null;
+        if (!wasFont) return;
+        int width = font.width(text); int height = font.lineHeight;
+        if (automaticSize) {
+            xs = (int)clamp(width, minSize.x, maxSize.x);
+            ys = (int)clamp(height, minSize.y, maxSize.y);
         } else {
             xs = (int)clamp((size.x.offset + size.x.scale * parent.absoluteSize.x), minSize.x, maxSize.x);
             ys = (int)clamp((size.y.offset + size.y.scale * parent.absoluteSize.y), minSize.y, maxSize.y);
         }
         int x = (int)position.x.offset + (int)(position.x.scale * parent.absoluteSize.x + parent.absolutePosition.x) - (int)(anchorPoint.x * xs);
         int y = (int)position.y.offset + (int)(position.y.scale * parent.absoluteSize.y + parent.absolutePosition.y) - (int)(anchorPoint.y * ys);
+        int textX = x; int textY = y;
+        switch (textXAlignment) {
+            case LEFT -> textX += textPadding.x;
+            case CENTER -> textX += xs/2-width/2+textPadding.x;
+            case RIGHT -> textX += xs-width+textPadding.x;
+            default -> {}
+        } switch (textYAlignment) {
+            case TOP -> textY += textPadding.y;
+            case CENTER -> textY += ys/2-height/2+textPadding.y;
+            case BOTTOM -> textY += ys-height+textPadding.y;
+            default -> {}
+        }
         absolutePosition.x = x; absolutePosition.y = y;
         absoluteSize.x = xs; absoluteSize.y = ys;
+        absoluteCenter.x = x+xs/2; absoluteCenter.y = y+ys/2;
+        textAbsolutePosition.x = textX; textAbsolutePosition.y = textY;
         for (Frame child : children) {
             child.updateCalculations();
         };

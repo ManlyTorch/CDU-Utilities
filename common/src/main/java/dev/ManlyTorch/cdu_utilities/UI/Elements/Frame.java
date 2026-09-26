@@ -18,7 +18,6 @@ public class Frame {
     public UDim2 position = new UDim2();
     public int backgroundColor = 0x7f141414;
     public int borderColor = 0xff3c3c3c;
-    // public int borderPixelSize = 1;
     public int zIndex = 0;
     protected Frame parent;
     public UIScreen screen;
@@ -27,6 +26,7 @@ public class Frame {
     public boolean automaticSize = false;
     public Vector2 absolutePosition = new Vector2();
     public Vector2 absoluteSize = new Vector2();
+    public Vector2 absoluteCenter = new Vector2();
     public BindableEvent<RenderParams> MouseHovered = new BindableEvent<>();
 
     public record RenderParams(GuiGraphics gg, int x, int y) {}
@@ -63,6 +63,7 @@ public class Frame {
         int y = (int)position.y.offset + (int)(position.y.scale * parent.absoluteSize.y + parent.absolutePosition.y) - (int)(anchorPoint.y * ys);
         absolutePosition.x = x; absolutePosition.y = y;
         absoluteSize .x = xs; absoluteSize.y = ys;
+        absoluteCenter.x = x+xs/2; absoluteCenter.y = y+ys/2;
         for (Frame child : children) {
             child.updateCalculations();
         };
@@ -74,6 +75,7 @@ public class Frame {
         int y = (int)position.y.offset + (int)(position.y.scale * screen.height) - (int)(anchorPoint.y * ys);
         absolutePosition.x = x; absolutePosition.y = y;
         absoluteSize.x = xs; absoluteSize.y = ys;
+        absoluteCenter.x = x+xs/2; absoluteCenter.y = y+ys/2;
         for (Frame child : children) {
             child.updateCalculations();
         };
@@ -83,28 +85,7 @@ public class Frame {
         return (mouseX >= absolutePosition.x && mouseX <= absolutePosition.x + absoluteSize.x && mouseY >= absolutePosition.y && mouseY <= absolutePosition.y + absoluteSize.y);
     };
 
-    public int getXSize() {
-        if (parent != null) {
-            return (int)clamp((size.x.offset + size.x.scale * parent.getXSize()), minSize.x, maxSize.x);
-        } else {
-            return (int)clamp((size.x.offset + size.x.scale * screen.width), minSize.x, maxSize.x);
-        }
-    }
-    public int getYSize() {
-        if (parent != null) {
-            return (int)clamp((size.y.offset + size.y.scale * parent.getYSize()), minSize.y, maxSize.y);
-        } else {
-            return (int)clamp((size.y.offset + size.y.scale * screen.height), minSize.y, maxSize.y);
-        }
-    }
-
     public void renderBackground(GuiGraphics gg, int mouseX, int mouseY, float partialTick, int backgroundColor) {
-        // int xs = getXSize();
-        // int x = (int)position.x.offset + (int)(position.x.scale * screen.width) - (int)(anchorPoint.x * xs);
-        // int ys = getYSize();
-        // int y = (int)position.y.offset + (int)(position.y.scale * screen.height) - (int)(anchorPoint.y * ys);
-        // gg.fill(x, y, x + xs, y + ys, backgroundColor);
-        // gg.renderOutline(x, y, xs, ys, borderColor);
         int xCorner = (int)absolutePosition.x + (int)absoluteSize.x;
         int yCorner = (int)absolutePosition.y + (int)absoluteSize.y;
         gg.fill((int)absolutePosition.x, (int)absolutePosition.y, xCorner, yCorner, backgroundColor);

@@ -53,7 +53,7 @@ public final class MojangService {
 
     private static void fetchSkin(String uuid) {
         try {
-            JsonObject profile = HTTPService.getJson("sessionserver.mojang.com/session/minecraft/profile/" + uuid);
+            JsonObject profile = HTTPService.getJson("sessionserver.mojang.com/session/minecraft/profile/" + uuid).getAsJsonObject();
             if (!profile.has("properties")) return;
             for (JsonElement element : profile.getAsJsonArray("properties")) {
                 JsonObject property = element.getAsJsonObject();
@@ -81,18 +81,27 @@ public final class MojangService {
         return UUID.fromString(strUUID.replaceFirst( "(\\w{8})(\\w{4})(\\w{4})(\\w{4})(\\w{12})", "$1-$2-$3-$4-$5"));
     }
 
+    public static String addDashes(String uuid) {
+        return uuid.replaceFirst("(\\w{8})(\\w{4})(\\w{4})(\\w{4})(\\w{12})", "$1-$2-$3-$4-$5");
+    }
+
     public static String getUUIDfromName(String username) {
         String cached = UUID_CACHE.get(username);
-        if (cached != null) return cached;
+        if (cached != null) {
+            if (!cached.contains("-")) {
+                cached = addDashes(cached);
+                UUID_CACHE.put(username, cached); saveCache();
+            }
+            return cached;
+        }
         Minecraft mc = Minecraft.getInstance();
         if (mc.getConnection() != null) {
             for (PlayerInfo info : mc.getConnection().getOnlinePlayers()) {
                 GameProfile prof = info.getProfile();
                 String name = prof.getName();
                 if (!name.equalsIgnoreCase(username)) continue;
-                String uuid = prof.getId().toString().replace("-", "");
-                UUID_CACHE.put(name.toLowerCase(), uuid);
-                return uuid;
+                String uuid = prof.getId().toString();
+                UUID_CACHE.put(name.toLowerCase(), uuid); saveCache(); return uuid;
             };
         };
         String uuid = fetchUUID(username);
@@ -100,15 +109,16 @@ public final class MojangService {
             Component userComp = Component.literal(username).withStyle(ChatFormatting.WHITE);
             mc.player.displayClientMessage(user.copy().append(userComp).append(notExist), true);
         };
-        return uuid;
+        return addDashes(uuid);
     };
 
     public static String fetchUUID(String username) {
-        JsonObject response = HTTPService.getJson("api.mojang.com/users/profiles/minecraft/" + username);
+        JsonObject response = HTTPService.getJson("api.mojang.com/users/profiles/minecraft/" + username).getAsJsonObject();
         if (response == null) return null;
-        JsonElement uuid = response.get("id");
-        if (uuid == null) return null;
-        UUID_CACHE.put(username, uuid.getAsString()); saveCache(); return uuid.getAsString();
+        JsonElement el = response.get("id");
+        if (el == null) return null;
+        String uuid = addDashes(el.getAsString());
+        UUID_CACHE.put(username, uuid); saveCache(); return uuid;
     };
 
     private static void loadCache() {

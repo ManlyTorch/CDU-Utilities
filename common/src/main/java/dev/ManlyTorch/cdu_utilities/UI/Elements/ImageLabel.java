@@ -4,6 +4,7 @@ import dev.ManlyTorch.cdu_utilities.Lib.*;
 import dev.ManlyTorch.cdu_utilities.UI.Types.*;
 
 import com.mojang.blaze3d.systems.RenderSystem;
+import com.mojang.math.Axis;
 
 import net.minecraft.client.gui.GuiGraphics;
 
@@ -15,6 +16,9 @@ public class ImageLabel extends Frame {
     public String tCache = "NULL";
     public ImageCacher.LoadedTexture backupImg;
     public List<BlitOptions> blits = new ArrayList<>();
+    public float rotation = 0f;
+    public float rotationStep = 0f;
+    public long lastTickTime = 0L;
 
     public record BlitOptions(float u, float v, int uW, int uH, int tW, int tH) {}
 
@@ -34,20 +38,41 @@ public class ImageLabel extends Frame {
             texture = backupImg;
         };
         RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
+        RenderSystem.enableBlend();
+        RenderSystem.defaultBlendFunc();
         int width = texture.width(); int height = texture.height();
         int xPos = (int)absolutePosition.x; int yPos = (int)absolutePosition.y;
         int xSize = (int)absoluteSize.x; int ySize = (int)absoluteSize.y;
-        if (blits.size() == 0) { gg.blit(texture.location(), xPos, yPos, xSize, ySize, 0, 0, width, height, width, height); return; }
-        for (BlitOptions blitOptions : blits) {
+        long curTickTime = System.currentTimeMillis();
+        if (lastTickTime != 0L) {
+            rotation += rotationStep * ((float)(curTickTime - lastTickTime)/1000f);
+            rotation %= 360f;
+        }
+        lastTickTime = curTickTime;
+        gg.pose().pushPose();
+        gg.pose().translate(absoluteCenter.x, absoluteCenter.y, 0);
+        gg.pose().mulPose(Axis.ZP.rotationDegrees(rotation));
+        gg.pose().translate(-absoluteCenter.x, -absoluteCenter.y, 0);
+        if (blits.size() == 0) gg.blit(texture.location(), xPos, yPos, xSize, ySize, 0, 0, width, height, width, height);
+        else for (BlitOptions blitOptions : blits) {
             gg.blit(texture.location(),
             xPos, yPos,
             xSize, ySize,
             blitOptions.u(), blitOptions.v(),
             blitOptions.uW(), blitOptions.uH(),
             blitOptions.tW(), blitOptions.tH());
-        }
+        };
+        gg.pose().popPose();
+        RenderSystem.disableBlend();
     }
 
+    public ImageLabel setImgPath(String imgPath, int width, int height) {
+        this.imgURL = imgPath;
+        ImageCacher.loadImage(imgPath, width, height);
+        return this;
+    }
+    public ImageLabel setRotation(float rot) { this.rotation = rot; return this; }
+    public ImageLabel setRotationStep(float rot) { this.rotationStep = rot; return this; }
     public ImageLabel addBlitOption(BlitOptions blitOption) { blits.add(blitOption); return this; }
     public ImageLabel setParent(Frame parent) { super.setParent(parent); return this; }
     public ImageLabel setTCache(String tCache) { this.tCache = tCache; return this; }

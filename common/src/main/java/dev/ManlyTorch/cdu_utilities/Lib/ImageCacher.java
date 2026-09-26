@@ -3,6 +3,7 @@ package dev.ManlyTorch.cdu_utilities.Lib;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import com.mojang.blaze3d.platform.NativeImage;
+
 import org.jetbrains.annotations.Nullable;
 
 import net.minecraft.client.Minecraft;
@@ -56,6 +57,14 @@ public final class ImageCacher {
         return null;
     };
     
+    public static LoadedTexture loadImage(String imgPath, int width, int height) {
+        ResourceLocation img = ResourceLocation.tryParse(imgPath);
+        LoadedTexture loaded = new LoadedTexture(img, width, height);
+        STATE.put(imgPath, State.READY);
+        TEXTURES.put(imgPath, loaded);
+        return loaded;
+    }
+
     private static NativeImage convertLegacySkinIfNeeded(NativeImage src) {
         if (src.getHeight() >= 64) return src;
         NativeImage dst = new NativeImage(NativeImage.Format.RGBA, 64, 64, true);

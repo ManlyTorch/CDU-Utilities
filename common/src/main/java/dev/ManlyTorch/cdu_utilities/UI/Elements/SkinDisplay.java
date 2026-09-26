@@ -11,10 +11,8 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.player.RemotePlayer;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.client.multiplayer.ClientLevel;
-import net.minecraft.world.entity.player.PlayerModelPart;
 import net.minecraft.client.renderer.entity.EntityRenderDispatcher;
 
 import org.joml.Quaternionf;
@@ -29,11 +27,13 @@ public class SkinDisplay extends Frame {
     public String skinURL;
     public String username = "Player";
     private RemotePlayer fakePlyr;
-    private float xRot = 180f;
-    private float yRot = 0f;
+    private float xRot = 180f; private float yRot = 0f;
+    private float xVel = 0f; private float yVel = 0f;
     private boolean dragging = false;
-    private double lastMouseX;
-    private double lastMouseY;
+    private double lastMouseX; private double lastMouseY;
+    private float friction = 0.9f;
+    private float speedMult = 0.1f;
+    private float MAX_Y_ROT = 80f; private float MIN_Y_ROT = -80f;
     private static final float PIVOT_HEIGHT = 0.9f;
 
     private GameProfile buildProfile() {
@@ -57,6 +57,8 @@ public class SkinDisplay extends Frame {
     }
 
     private void handleDrag(int mouseX, int mouseY) {
+        xVel *= friction; yVel *= friction;
+        xRot -= xVel; yRot = Math.max(Math.min(yRot + yVel, MAX_Y_ROT), MIN_Y_ROT);
         if (!clicked && !rightClicked) return;
         boolean mouseDown = isMBHeld(1) | isMBHeld(0);
         if (mouseDown && isHovering(mouseX, mouseY) && !dragging) {
@@ -67,7 +69,7 @@ public class SkinDisplay extends Frame {
         if (dragging) {
             double dx = mouseX - lastMouseX; double dy = mouseY - lastMouseY;
             float facing = (float) Math.signum(Math.cos(Math.toRadians(yRot)));
-            xRot -= (float) dx * facing; yRot += (float) dy;
+            xVel += dx*facing*speedMult; yVel += dy*speedMult;
             lastMouseX = mouseX; lastMouseY = mouseY;
         }
     }
@@ -116,6 +118,10 @@ public class SkinDisplay extends Frame {
         gg.disableScissor();
     }
 
+    public SkinDisplay setFriction(float friction) { this.friction = friction; return this; }
+    public SkinDisplay setSpeedMult(float speed) { this.speedMult = speed; return this; }
+    public SkinDisplay setMinYRot(float minRot) { this.MIN_Y_ROT = minRot; return this; }
+    public SkinDisplay setMaxYRot(float maxRot) { this.MAX_Y_ROT = maxRot; return this; }
     public SkinDisplay setUUID(UUID uuid) { this.uuid = uuid; return this; }
     public SkinDisplay setSkinURL(String imgURL) { this.skinURL = imgURL; return this; }
     public SkinDisplay setUsername(String username) { this.username = username; return this; }

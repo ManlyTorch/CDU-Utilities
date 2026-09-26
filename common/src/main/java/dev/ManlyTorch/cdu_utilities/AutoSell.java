@@ -4,7 +4,6 @@ import dev.ManlyTorch.cdu_utilities.Lib.DataStore;
 import dev.ManlyTorch.cdu_utilities.Lib.DataStore.AHEntry;
 
 import com.mojang.blaze3d.platform.InputConstants;
-import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.builder.RequiredArgumentBuilder;
 

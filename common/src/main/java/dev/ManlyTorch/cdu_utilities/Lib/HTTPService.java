@@ -1,5 +1,6 @@
 package dev.ManlyTorch.cdu_utilities.Lib;
 
+import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
@@ -7,10 +8,10 @@ import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.io.InputStreamReader;
 
+import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.mojang.blaze3d.platform.NativeImage;
-
 public class HTTPService {
     private HTTPService() {};
 
@@ -37,6 +38,23 @@ public class HTTPService {
             InputStream stream = (code >= 200 && code < 300) ? conn.getInputStream() : conn.getErrorStream();
             try (InputStreamReader reader = new InputStreamReader(stream, StandardCharsets.UTF_8)) {
                 JsonObject jsonObj = JsonParser.parseReader(reader).getAsJsonObject();
+                if (code != 200) throw new IOException("HTTPService returned " + code + ": " + jsonObj);
+                return jsonObj;
+            } finally {conn.disconnect();}
+        } catch (Exception e) { return null; }
+    }
+    public static JsonArray getJsonArray(String urlStr) {
+        try {
+            URL url = new URL("https://" + urlStr);
+            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+            conn.setRequestMethod("GET");
+            conn.setRequestProperty("Accept", "application/json");
+            conn.setConnectTimeout(20000);
+            conn.setReadTimeout(10000);
+            int code = conn.getResponseCode();
+            InputStream stream = (code >= 200 && code < 300) ? conn.getInputStream() : conn.getErrorStream();
+            try (InputStreamReader reader = new InputStreamReader(stream, StandardCharsets.UTF_8)) {
+                JsonArray jsonObj = JsonParser.parseReader(reader).getAsJsonArray();
                 if (code != 200) throw new IOException("HTTPService returned " + code + ": " + jsonObj);
                 return jsonObj;
             } finally {conn.disconnect();}
