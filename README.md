@@ -12,4 +12,5 @@ Current commands:
 /addSell \<price\> \<count\> \<listingTime\>                           
 /addBulkSell \<price\> \<count\> \<listingTime\>                           
 /stats \<PlayerName\> command.                           
-<img width="743" height="752" alt="image" src="https://github.com/user-attachments/assets/ef91c950-76a4-48bf-87ee-658763fe62f7" />
+<img width="821" height="893" alt="manlytorch" src="https://github.com/user-attachments/assets/694319e9-887f-4f24-bcea-8ac300d6166b" />
+
