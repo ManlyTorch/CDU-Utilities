@@ -88,7 +88,7 @@ public class CDUService {
                 continue;
             }
             if (lbStats != null && statName.equals("overall_rank")) {
-                if (lbStats.get("data") == null) continue;
+                if (lbStats.get("data") == null || lbStats.get("data").isJsonNull()) continue;
                 JsonObject data = lbStats.get("data").getAsJsonObject();
                 if (data == null || data.get("overallRank").isJsonNull()) continue;
                 int page = (int)Math.ceil(data.get("overallRank").getAsDouble()/50d);
