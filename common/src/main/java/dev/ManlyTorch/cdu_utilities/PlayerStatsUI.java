@@ -441,7 +441,7 @@ public class PlayerStatsUI {
                     .setTextColor(lbColors.get(rank) != null ? lbColors.get(rank) : LBSPOT_COLOR);
             }
             strVal = value instanceof String ? (String) value :
-                statName.equals("playtime") ? Math.ceil((long)value/3600/10)*10 + "h" : formatNumber((long)value);
+                statName.equals("playtime") ? Math.ceil((long)value/3600*100)/100 + "h" : formatNumber((long)value);
             labels.value().setText(Component.literal(strVal));
         }
 
