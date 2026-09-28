@@ -53,7 +53,7 @@ public final class MojangService {
 
     private static void fetchSkin(String uuid) {
         try {
-            JsonObject profile = HTTPService.getJson("sessionserver.mojang.com/session/minecraft/profile/" + uuid).getAsJsonObject();
+            JsonObject profile = HTTPService.getJson("sessionserver.mojang.com/session/minecraft/profile/" + uuid);
             if (!profile.has("properties")) return;
             for (JsonElement element : profile.getAsJsonArray("properties")) {
                 JsonObject property = element.getAsJsonObject();
@@ -108,12 +108,13 @@ public final class MojangService {
         if (uuid == null) {
             Component userComp = Component.literal(username).withStyle(ChatFormatting.WHITE);
             mc.player.displayClientMessage(user.copy().append(userComp).append(notExist), true);
+            return null;
         };
         return addDashes(uuid);
     };
 
     public static String fetchUUID(String username) {
-        JsonObject response = HTTPService.getJson("api.mojang.com/users/profiles/minecraft/" + username).getAsJsonObject();
+        JsonObject response = HTTPService.getJson("api.mojang.com/users/profiles/minecraft/" + username);
         if (response == null) return null;
         JsonElement el = response.get("id");
         if (el == null) return null;

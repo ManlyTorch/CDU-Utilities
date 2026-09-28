@@ -12,16 +12,21 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.network.chat.TextColor;
+import com.mojang.logging.LogUtils;
+
+import org.slf4j.Logger;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-
 public class CDUService {
-    private static final long STATS_CACHE_MS = 60_000;
+    private static final Logger LOGGER = LogUtils.getLogger();
+
+    private static final long STATS_CACHE_MS = 120_000;
     private static final Map<String, Long> CACHED_AT = new ConcurrentHashMap<>();
     private static final MutableComponent noStats = Component.literal("Couldn't load stats for ").withStyle(ChatFormatting.RED);
     private static final MutableComponent user = Component.literal("User ").withStyle(ChatFormatting.RED);
@@ -135,7 +140,7 @@ public class CDUService {
             ));
         }
         String prefix = getRankPrefix(lbStats);
-        if (prefix != null && prefix != "") {
+        if (prefix != null && prefix != "" && !prefix.contains("earned-") && prefixes.get(prefix) != null) {
             stats.put("prefix", prefixes.get(prefix));
         } else { // get playtime rank
             for (int i = playtimeRanks.size() - 1; i >= 0; i--) { Map<String, Object> rankReq = playtimeRanks.get(i);
@@ -172,10 +177,11 @@ public class CDUService {
         Thread t100Thread = runThread(() -> {
             JsonObject top100 = HTTPService.getJson(lbURL + statCategory + "&page=2");
             if (top100 == null || top100.isJsonNull()) { sleep(3000); top100 = HTTPService.getJson(lbURL + statCategory + "&page=2"); }
-            if (top100 != null) top.put("100", top100);
+            if (top100 != null && !top100.isJsonNull()) top.put("100", top100);
+            else { top100 = new JsonObject(); top100.add("items", new JsonArray()); top.put("100", top100); }
         });
         try { t50Thread.join(); t100Thread.join(); } catch (Exception e) { return; }
-        if (!top.containsKey("50")) return;
+        if (!top.containsKey("50") || top.get("50") == null || top.get("50").isJsonNull()) return;
         for (JsonArray jsonLb : List.of(top.get("50").getAsJsonArray("items"), top.get("100").getAsJsonArray("items"))) {
             for (JsonElement element : jsonLb) { JsonObject obj = element.getAsJsonObject();
                 Map<String, Long> mapElement = Map.of(
@@ -202,17 +208,20 @@ public class CDUService {
             if (prefixStrs != null) httpResp.put("prefixes", prefixStrs);
         });
         try { perkT.join(); prefixStrT.join(); } catch (Exception e) { return; }
-        if (!httpResp.containsKey("prefixes") || !httpResp.containsKey("perks")) { return; }
+        if (!httpResp.containsKey("perks")) { return; }
         JsonObject prefixesObj = (JsonObject)httpResp.get("prefixes");
-        for (JsonElement element : prefixesObj.getAsJsonArray("prefixes")) {
-            JsonObject prefixData = element.getAsJsonObject();
-            JsonElement prefixEl = prefixData.get("prefix_json");
-            Component prefixComp;
-            if (!prefixEl.isJsonArray()) prefixComp = constructPrefix(prefixEl.getAsJsonObject().getAsJsonArray("extra"));
-            else prefixComp = constructPrefix(prefixEl.getAsJsonArray());
-            prefixes.put(prefixData.get("name").getAsString(), prefixComp);
+        if (prefixesObj != null && !prefixesObj.isJsonNull()) {
+            for (JsonElement element : prefixesObj.getAsJsonArray("prefixes")) {
+                JsonObject prefixData = element.getAsJsonObject();
+                JsonElement prefixEl = prefixData.get("prefix_json");
+                Component prefixComp;
+                if (!prefixEl.isJsonArray()) prefixComp = constructPrefix(prefixEl.getAsJsonObject().getAsJsonArray("extra"));
+                else prefixComp = constructPrefix(prefixEl.getAsJsonArray());
+                prefixes.put(prefixData.get("name").getAsString(), prefixComp);
+            }
         }
         JsonArray perks = (JsonArray)httpResp.get("perks");
+        if (perks == null || perks.isJsonNull()) return;
         long ptReq = 0;
         for (int i = perks.size() - 1; i >= 0; i--) { JsonObject obj = perks.get(i).getAsJsonObject();
             JsonObject req = obj.get("requirements").getAsJsonObject();
@@ -222,8 +231,10 @@ public class CDUService {
             else hours = Long.parseLong(playtime.replace(",", "").replace(" hrs", "").trim());
             String prefixName = getPrefixName(getString(obj, "rank", ""));
             Map<String, Object> rankReq = new HashMap<>();
+            Component prefix = prefixes.containsKey(prefixName) ?
+                prefixes.get(prefixName) : Component.literal(getString(obj, "rank", "Unknown"));
             rankReq.put("name", prefixName);
-            rankReq.put("txt", prefixes.get(prefixName));
+            rankReq.put("txt", prefix);
             rankReq.put("votes", votes);
             rankReq.put("playtime", hours*3600L);
             playtimeRanks.add(rankReq);
@@ -285,7 +296,9 @@ public class CDUService {
 
     public static Thread createThread(Runnable callback) {
         Thread t = new Thread(callback);
-        t.setUncaughtExceptionHandler((thread, ex) -> { System.err.println(ex.getMessage());; });
+        t.setUncaughtExceptionHandler((thread, ex) -> {
+            LOGGER.error(ex.getMessage() + "\n" + Arrays.toString(ex.getStackTrace()));
+        });
         return t;
     };
     public static Thread runThread(Runnable callback) { Thread t = createThread(callback); t.start(); return t; }

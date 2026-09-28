@@ -395,8 +395,7 @@ public class PlayerStatsUI {
     public static Thread createThread(Runnable callback) {
         Thread t = new Thread(callback);
         t.setUncaughtExceptionHandler((thread, ex) -> {
-            LOGGER.error(ex.getMessage());
-            LOGGER.error(Arrays.toString(ex.getStackTrace()));
+            LOGGER.error(ex.getMessage() + "\n" + Arrays.toString(ex.getStackTrace()));
         });
         return t;
     };
@@ -441,7 +440,7 @@ public class PlayerStatsUI {
                     .setTextColor(lbColors.get(rank) != null ? lbColors.get(rank) : LBSPOT_COLOR);
             }
             strVal = value instanceof String ? (String) value :
-                statName.equals("playtime") ? Math.ceil((long)value/3600*100)/100 + "h" : formatNumber((long)value);
+                statName.equals("playtime") ? Math.ceil((long)value/3600f*10f)/10f + "h" : formatNumber((long)value);
             labels.value().setText(Component.literal(strVal));
         }
 
@@ -506,8 +505,11 @@ public class PlayerStatsUI {
             threads.add(runThread(() -> CDUService.preloadLeaderboard(statCategory, true)));
         }
         if (init) return; init = true;
-        checkLeaderboards(threads);
-        threads.add(runThread(() -> CDUService.preloadPrefixes()));
+        runThread(() -> {
+            CDUService.sleep(5000);
+            checkLeaderboards(threads);
+            CDUService.preloadPrefixes();
+        });
     }
 
     public static void checkLeaderboards(List<Thread> threads) {
