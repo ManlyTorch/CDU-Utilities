@@ -1,3 +1,5 @@
+Project is no longer going to be worked on because of how CDUs owner & staff responses to many events.
+
 # NOT AFFILIATED WITH CDU IN ANY OFFICIAL CAPACITY
 
 1.21 verion support:                              
